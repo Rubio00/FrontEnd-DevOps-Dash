@@ -1,1 +1,14 @@
 @import "tailwindcss";
+
+
+@theme {
+  --color-primary: #4a2c1a;
+  --color-accent: #c8843a;
+  --color-page: #faf6f0;
+  --color-ink: #2b1d14;
+}
+
+body {
+  background: var(--color-page);
+  color: var(--color-ink);
+}
