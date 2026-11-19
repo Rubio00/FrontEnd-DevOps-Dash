@@ -10,6 +10,7 @@ type Product = {
   price: number;
   image: string;
   description: string;
+  type?: "elaborado" | "reventa";
 };
 
 type CartItem = Product & {
@@ -29,9 +30,12 @@ const products: Product[] = [
   { id: 10, name: "Brownie", category: "Postres", price: 2.75, image: "/images/productos/brownie.jpg", description: "Brownie de chocolate" },
   { id: 11, name: "Croissant", category: "Alimentos", price: 2.50, image: "/images/productos/croissant.jpg", description: "Croissant recién horneado" },
   { id: 12, name: "Sándwich Club", category: "Alimentos", price: 5.50, image: "/images/productos/sandwich-club.jpg", description: "Sándwich especial de la casa" },
+  { id: 13, name: "Agua embotellada", category: "Reventa", price: 0.75, image: "/images/productos/agua.jpg", description: "Agua purificada embotellada", type: "reventa" },
+{ id: 14, name: "Gaseosa en lata", category: "Reventa", price: 1.25, image: "/images/productos/gaseosa.jpg", description: "Bebida gaseosa en presentación de lata", type: "reventa" },
+{ id: 15, name: "Galletas empacadas", category: "Reventa", price: 1.50, image: "/images/productos/galletas.jpg", description: "Galletas listas para consumir", type: "reventa" },
 ];
 
-const categories = ["Todos", "Cafés", "Bebidas", "Postres", "Alimentos"];
+const categories = ["Todos", "Cafés", "Bebidas", "Postres", "Alimentos", "Reventa"];
 
 export default function VentasPage() {
   const [selectedCategory, setSelectedCategory] = useState("Todos");
@@ -286,6 +290,16 @@ export default function VentasPage() {
                   <p className="text-xs font-medium uppercase tracking-wider text-[#A27B59]">
                     {product.category}
                   </p>
+
+                  <span
+                  className={`mt-2 inline-block rounded-full px-3 py-1 text-[10px] font-bold tracking-wider ${
+                  product.type === "reventa"
+                  ? "bg-[#E8D9C8] text-[#79543A]"
+                  : "bg-[#E5EDE2] text-[#55704E]"
+                  }`}
+                >
+               {product.type === "reventa" ? "REVENTA" : "ELABORADO"}
+                </span>
 
                   <h5 className="mt-1 font-bold">
                     {product.name}
