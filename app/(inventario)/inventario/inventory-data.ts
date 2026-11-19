@@ -6,6 +6,11 @@ export type Branch = {
   name: string;
 };
 
+export type Category = {
+  id: string;
+  name: string;
+};
+
 export type Supplier = {
   id: string;
   name: string;
@@ -63,6 +68,19 @@ export const branches: Branch[] = [
   { id: "centro", name: "Centro" },
   { id: "santa-tecla", name: "Santa Tecla" },
   { id: "san-miguel", name: "San Miguel" },
+];
+
+export const categories: Category[] = [
+  { id: "alimentos-empacados", name: "Alimentos empacados" },
+  { id: "alternativas", name: "Alternativas" },
+  { id: "bebidas-empacadas", name: "Bebidas empacadas" },
+  { id: "bebidas-sin-cafe", name: "Bebidas sin café" },
+  { id: "cafe-caliente", name: "Café caliente" },
+  { id: "cafe-frio", name: "Café frío" },
+  { id: "empacados", name: "Empacados" },
+  { id: "empaques", name: "Empaques" },
+  { id: "lacteos", name: "Lácteos" },
+  { id: "materia-prima", name: "Materia prima" },
 ];
 
 export const initialSuppliers: Supplier[] = [

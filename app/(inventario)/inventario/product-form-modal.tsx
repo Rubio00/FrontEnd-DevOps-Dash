@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { FormEvent } from "react";
-import { createEmptyStockLevels } from "./inventory-data";
+import { categories, createEmptyStockLevels } from "./inventory-data";
 import type {
   InventoryItem,
   InventoryItemKind,
@@ -50,26 +50,55 @@ export default function ProductFormModal({
   const [unit, setUnit] = useState<Unit>("unidad");
   const [minStock, setMinStock] = useState("10");
   const [supplierIds, setSupplierIds] = useState<string[]>([]);
-  const [recipe, setRecipe] = useState<RecipeDraft[]>([
-    { key: "recipe-0", ingredientId: ingredients[0]?.id ?? "", quantity: "" },
-  ]);
+  const [recipe, setRecipe] = useState<RecipeDraft[]>([]);
+  const [selectedIngredientId, setSelectedIngredientId] = useState(ingredients[0]?.id ?? "");
   const [error, setError] = useState("");
 
-  function updateRecipe(key: string, field: "ingredientId" | "quantity", value: string) {
+  const availableIngredients = ingredients.filter(
+    (ingredient) => !recipe.some((item) => item.ingredientId === ingredient.id),
+  );
+  const numericPrice = Number(price);
+  const priceError = price !== "" && (!Number.isFinite(numericPrice) || numericPrice <= 0)
+    ? "El precio de venta debe ser mayor que cero."
+    : "";
+  const numericMinStock = Number(minStock);
+  const minStockError = minStock !== "" && (
+    !Number.isFinite(numericMinStock) ||
+    numericMinStock < 0 ||
+    ((kind === "reventa" || unit === "unidad") && !Number.isInteger(numericMinStock))
+  )
+    ? "Ingresá una cantidad válida; para unidades usá números enteros."
+    : "";
+
+  function updateRecipeQuantity(key: string, value: string) {
+    setError("");
     setRecipe((current) =>
-      current.map((item) => (item.key === key ? { ...item, [field]: value } : item)),
+      current.map((item) => (item.key === key ? { ...item, quantity: value } : item)),
     );
   }
 
   function addIngredient() {
+    const ingredient = availableIngredients.find((item) => item.id === selectedIngredientId);
+    if (!ingredient) return;
+
+    const remainingIngredients = availableIngredients.filter((item) => item.id !== ingredient.id);
     setRecipe((current) => [
       ...current,
       {
         key: `recipe-${Date.now()}`,
-        ingredientId: ingredients[0]?.id ?? "",
+        ingredientId: ingredient.id,
         quantity: "",
       },
     ]);
+    setSelectedIngredientId(remainingIngredients[0]?.id ?? "");
+    setError("");
+  }
+
+  function removeIngredient(key: string) {
+    const removedIngredient = recipe.find((item) => item.key === key);
+    setRecipe((current) => current.filter((item) => item.key !== key));
+    if (removedIngredient && !selectedIngredientId) setSelectedIngredientId(removedIngredient.ingredientId);
+    setError("");
   }
 
   function toggleSupplier(supplierId: string) {
@@ -236,14 +265,20 @@ export default function ProductFormModal({
             </label>
             <label className="block text-sm font-semibold text-primary">
               Categoría
-              <input
-                className="mt-2 w-full rounded-xl border border-primary/15 px-3 py-3 text-sm font-normal outline-none placeholder:text-ink/30 focus:border-accent focus:ring-2 focus:ring-accent/20"
-                onChange={(event) => setCategory(event.target.value)}
-                placeholder="Ej. Repostería"
+              <select
+                className="mt-2 w-full rounded-xl border border-primary/15 bg-white px-3 py-3 text-sm font-normal outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
+                onChange={(event) => {
+                  setCategory(event.target.value);
+                  setError("");
+                }}
                 required
-                type="text"
                 value={category}
-              />
+              >
+                <option disabled value="">Seleccioná una categoría</option>
+                {categories.map((option) => (
+                  <option key={option.id} value={option.name}>{option.name}</option>
+                ))}
+              </select>
             </label>
             <label className="block text-sm font-semibold text-primary">
               SKU
@@ -275,15 +310,20 @@ export default function ProductFormModal({
               <label className="block text-sm font-semibold text-primary">
                 Precio de venta (USD)
                 <input
-                  className="mt-2 w-full rounded-xl border border-primary/15 px-3 py-3 text-sm font-normal outline-none placeholder:text-ink/30 focus:border-accent focus:ring-2 focus:ring-accent/20"
+                  aria-invalid={Boolean(priceError)}
+                  className={`mt-2 w-full rounded-xl border px-3 py-3 text-sm font-normal outline-none placeholder:text-ink/30 focus:ring-2 ${priceError ? "border-red-400 focus:border-red-500 focus:ring-red-200" : "border-primary/15 focus:border-accent focus:ring-accent/20"}`}
                   min="0.01"
-                  onChange={(event) => setPrice(event.target.value)}
+                  onChange={(event) => {
+                    setPrice(event.target.value);
+                    setError("");
+                  }}
                   placeholder="0.00"
                   required
                   step="0.01"
                   type="number"
                   value={price}
                 />
+                {priceError && <span className="mt-2 block text-xs font-medium text-red-700" role="alert">{priceError}</span>}
               </label>
             )}
           </div>
@@ -294,40 +334,59 @@ export default function ProductFormModal({
               <p className="mb-4 text-xs leading-5 text-muted">
                 Solo se pueden seleccionar insumos. Los items de reventa no forman parte de las recetas.
               </p>
-              <div className="space-y-3">
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <label className="min-w-0 flex-1 text-xs font-semibold text-primary">
+                  Ingrediente
+                  <select
+                    className="mt-2 w-full rounded-xl border border-primary/15 bg-white px-3 py-2.5 text-sm font-normal outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
+                    disabled={availableIngredients.length === 0}
+                    onChange={(event) => setSelectedIngredientId(event.target.value)}
+                    value={selectedIngredientId}
+                  >
+                    {availableIngredients.map((option) => (
+                      <option key={option.id} value={option.id}>{option.name}</option>
+                    ))}
+                  </select>
+                </label>
+                <button
+                  className="self-end rounded-xl border border-primary/15 px-4 py-2.5 text-sm font-bold text-primary transition hover:bg-page focus:outline-none focus:ring-2 focus:ring-accent disabled:cursor-not-allowed disabled:opacity-40"
+                  disabled={availableIngredients.length === 0}
+                  onClick={addIngredient}
+                  type="button"
+                >
+                  + Agregar ingrediente
+                </button>
+              </div>
+              <div className="mt-4 space-y-3">
                 {recipe.map((item, index) => {
                   const ingredient = ingredients.find((current) => current.id === item.ingredientId);
+                  const quantityError = item.quantity !== "" && (!Number.isFinite(Number(item.quantity)) || Number(item.quantity) <= 0)
+                    ? "La cantidad debe ser mayor que cero."
+                    : "";
                   return (
-                    <div key={item.key} className="grid gap-3 rounded-xl bg-page p-3 sm:grid-cols-[minmax(0,1fr)_140px_90px] sm:items-end">
-                      <label className="text-xs font-semibold text-primary">
-                        Ingrediente {index + 1}
-                        <select
-                          className="mt-2 w-full rounded-xl border border-primary/15 bg-white px-3 py-2.5 text-sm font-normal outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
-                          onChange={(event) => updateRecipe(item.key, "ingredientId", event.target.value)}
-                          value={item.ingredientId}
-                        >
-                          {ingredients.map((option) => (
-                            <option key={option.id} value={option.id}>{option.name}</option>
-                          ))}
-                        </select>
-                      </label>
+                    <div key={item.key} className="grid gap-3 rounded-xl bg-page p-3 sm:grid-cols-[minmax(0,1fr)_160px_90px] sm:items-start">
+                      <div className="self-center">
+                        <p className="text-xs font-semibold text-primary">Ingrediente {index + 1}</p>
+                        <p className="mt-2 text-sm font-medium text-ink">{ingredient?.name}</p>
+                      </div>
                       <label className="text-xs font-semibold text-primary">
                         Cantidad {ingredient ? `(${ingredient.unit})` : ""}
                         <input
+                          aria-invalid={Boolean(quantityError)}
                           className="mt-2 w-full rounded-xl border border-primary/15 bg-white px-3 py-2.5 text-sm font-normal outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
                           min="0.01"
-                          onChange={(event) => updateRecipe(item.key, "quantity", event.target.value)}
+                          onChange={(event) => updateRecipeQuantity(item.key, event.target.value)}
                           placeholder="0"
                           required
                           step="0.01"
                           type="number"
                           value={item.quantity}
                         />
+                        {quantityError && <span className="mt-2 block text-xs font-medium text-red-700" role="alert">{quantityError}</span>}
                       </label>
                       <button
-                        className="rounded-xl border border-red-200 px-3 py-2.5 text-xs font-bold text-red-700 transition hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-400 disabled:cursor-not-allowed disabled:opacity-35"
-                        disabled={recipe.length === 1}
-                        onClick={() => setRecipe((current) => current.filter((currentItem) => currentItem.key !== item.key))}
+                        className="self-center rounded-xl border border-red-200 px-3 py-2.5 text-xs font-bold text-red-700 transition hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-400"
+                        onClick={() => removeIngredient(item.key)}
                         type="button"
                       >
                         Quitar
@@ -335,14 +394,12 @@ export default function ProductFormModal({
                     </div>
                   );
                 })}
+                {recipe.length === 0 && (
+                  <p className="rounded-xl bg-page p-4 text-center text-sm text-muted">
+                    Seleccioná un insumo y agregalo a la receta.
+                  </p>
+                )}
               </div>
-              <button
-                className="mt-4 rounded-xl border border-primary/15 px-4 py-2.5 text-sm font-bold text-primary transition hover:bg-page focus:outline-none focus:ring-2 focus:ring-accent"
-                onClick={addIngredient}
-                type="button"
-              >
-                + Agregar ingrediente
-              </button>
             </fieldset>
           ) : (
             <div className="space-y-5">
@@ -395,14 +452,19 @@ export default function ProductFormModal({
                   <label className="text-sm font-semibold text-primary">
                     Stock mínimo por sucursal {kind === "reventa" ? "(unidades)" : `(${unit})`}
                     <input
+                      aria-invalid={Boolean(minStockError)}
                       className="mt-2 w-full rounded-xl border border-primary/15 px-3 py-3 text-sm font-normal outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
                       min="0"
-                      onChange={(event) => setMinStock(event.target.value)}
+                      onChange={(event) => {
+                        setMinStock(event.target.value);
+                        setError("");
+                      }}
                       required
                       step={kind === "reventa" || unit === "unidad" ? "1" : "0.01"}
                       type="number"
                       value={minStock}
                     />
+                    {minStockError && <span className="mt-2 block text-xs font-medium text-red-700" role="alert">{minStockError}</span>}
                   </label>
                 </div>
               </fieldset>

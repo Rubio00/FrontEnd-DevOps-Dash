@@ -1,8 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { useMemo, useState } from "react";
-import type { FormEvent } from "react";
+import PageHeader from "@/components/PageHeader";
 import {
   branches,
   initialItems,
@@ -32,7 +31,6 @@ type IconName =
   | "box"
   | "check"
   | "history"
-  | "menu"
   | "plus"
   | "recipe"
   | "search"
@@ -46,7 +44,6 @@ const iconPaths: Record<IconName, string> = {
   box: "M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z M3.3 7 12 12l8.7-5 M12 22V12",
   check: "M20 6 9 17l-5-5",
   history: "M3 12a9 9 0 1 0 3-6.7L3 8 M3 3v5h5 M12 7v5l3 2",
-  menu: "M4 6h16 M4 12h16 M4 18h16",
   plus: "M12 5v14 M5 12h14",
   recipe: "M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z M14 2v6h6 M8 13h8 M8 17h6",
   search: "M21 21l-4.35-4.35 M19 11a8 8 0 1 1-16 0 8 8 0 0 1 16 0Z",
@@ -148,7 +145,7 @@ export default function InventoryDashboard() {
   const [items, setItems] = useState(initialItems);
   const [products, setProducts] = useState(initialProducts);
   const [suppliers, setSuppliers] = useState(initialSuppliers);
-  const [movements, setMovements] = useState(initialMovements);
+  const [movements] = useState(initialMovements);
   const [branchId, setBranchId] = useState(branches[0].id);
   const [activeTab, setActiveTab] = useState<Tab>("existencias");
   const [search, setSearch] = useState("");
@@ -157,12 +154,7 @@ export default function InventoryDashboard() {
   const [itemKindFilter, setItemKindFilter] = useState<ItemKindFilter>("todos");
   const [productSearch, setProductSearch] = useState("");
   const [productKind, setProductKind] = useState("todos");
-  const [adjustmentOpen, setAdjustmentOpen] = useState(false);
   const [productFormOpen, setProductFormOpen] = useState(false);
-  const [adjustmentItemId, setAdjustmentItemId] = useState(initialItems[0].id);
-  const [adjustmentQuantity, setAdjustmentQuantity] = useState("");
-  const [adjustmentDirection, setAdjustmentDirection] = useState<"incremento" | "disminucion">("incremento");
-  const [adjustmentReason, setAdjustmentReason] = useState("");
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
   const [toast, setToast] = useState<Toast | null>(null);
 
@@ -204,73 +196,8 @@ export default function InventoryDashboard() {
     });
   }, [productKind, productSearch, products]);
 
-  const alerts = branchItems.filter((item) => getStockStatus(item) !== "disponible");
   const branchMovements = movements.filter((movement) => movement.branchId === branchId);
   const selectedProduct = products.find((product) => product.id === selectedProductId);
-  const selectedAdjustmentItem = itemById.get(adjustmentItemId);
-
-  function currentTime() {
-    return `Hoy, ${new Date().toLocaleTimeString("es-SV", { hour: "2-digit", minute: "2-digit" })}`;
-  }
-
-  function openAdjustment(itemId = branchItems[0]?.id ?? items[0].id) {
-    setAdjustmentItemId(itemId);
-    setAdjustmentQuantity("");
-    setAdjustmentDirection("incremento");
-    setAdjustmentReason("");
-    setAdjustmentOpen(true);
-  }
-
-  function registerAdjustment(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const quantity = Number(adjustmentQuantity);
-    const item = itemById.get(adjustmentItemId);
-    const reason = adjustmentReason.trim();
-
-    if (!item || !Number.isFinite(quantity) || quantity <= 0) {
-      setToast({ type: "error", message: "Ingresá una cantidad mayor que cero." });
-      return;
-    }
-    if (!reason) {
-      setToast({ type: "error", message: "El motivo del ajuste es obligatorio." });
-      return;
-    }
-
-    const signedQuantity = adjustmentDirection === "incremento" ? quantity : -quantity;
-    const nextStock = item.stock + signedQuantity;
-    if (nextStock < 0) {
-      setToast({ type: "error", message: "El ajuste no puede dejar existencias negativas." });
-      return;
-    }
-
-    const time = currentTime();
-    setItems((current) => current.map((currentItem) => {
-      if (currentItem.id !== item.id) return currentItem;
-      const branchStock = currentItem.stockByBranch[branchId];
-      return {
-        ...currentItem,
-        stockByBranch: {
-          ...currentItem.stockByBranch,
-          [branchId]: { ...branchStock, stock: nextStock, updatedAt: time },
-        },
-      };
-    }));
-    setMovements((current) => [
-      {
-        id: `ajuste-${Date.now()}`,
-        branchId,
-        type: "ajuste",
-        item: item.name,
-        quantity: `${signedQuantity > 0 ? "+" : "-"}${formatQuantity(quantity, item.unit)}`,
-        detail: `Ajuste manual · ${reason}`,
-        time,
-        user: "Demo",
-      },
-      ...current,
-    ]);
-    setAdjustmentOpen(false);
-    setToast({ type: "success", message: `Ajuste registrado en sucursal ${currentBranch.name}.` });
-  }
 
   function createCatalogEntry({ product, item }: ProductFormResult) {
     if (item) setItems((current) => [...current, item]);
@@ -306,14 +233,6 @@ export default function InventoryDashboard() {
     setToast({ type: "success", message: `${supplier?.name ?? "El proveedor"} se eliminó correctamente.` });
   }
 
-  function reviewAlerts() {
-    setActiveTab("existencias");
-    setStatusFilter("todos");
-    setSearch("");
-    setCategoryFilter("todas");
-    setItemKindFilter("todos");
-  }
-
   const stats = [
     {
       label: "Insumos registrados",
@@ -336,13 +255,6 @@ export default function InventoryDashboard() {
       icon: "recipe" as IconName,
       color: "bg-emerald-100 text-emerald-700",
     },
-    {
-      label: `Alertas · ${currentBranch.name}`,
-      value: alerts.length.toString(),
-      detail: "Existencias de la sucursal activa",
-      icon: "alert" as IconName,
-      color: "bg-amber-100 text-amber-700",
-    },
   ];
 
   const tabs: { id: Tab; label: string; icon: IconName; count: number }[] = [
@@ -353,66 +265,9 @@ export default function InventoryDashboard() {
   ];
 
   return (
-    <div className="min-h-screen bg-page text-ink lg:flex">
-      <aside className="flex w-full flex-col bg-sidebar text-[#F8F0E5] lg:fixed lg:inset-y-0 lg:w-64">
-        <div className="border-b border-white/10 px-6 py-7">
-          <Link href="/admin" className="flex w-fit items-center gap-3">
-            <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#B58A60] text-white">
-              <Icon name="store" className="h-6 w-6" />
-            </span>
-            <span>
-              <span className="block text-lg font-bold tracking-wide">ORÍGENES SV</span>
-              <span className="block text-xs text-[#C9B7A4]">Sistema de gestión</span>
-            </span>
-          </Link>
-        </div>
-        <div className="px-5 py-7">
-          <p className="mb-4 text-xs font-semibold uppercase tracking-[0.2em] text-[#A99583]">Menú principal</p>
-          <nav aria-label="Módulos principales" className="space-y-2">
-            {[
-              { href: "/ventas", label: "Ventas", icon: "menu" as IconName, badge: "POS" },
-              { href: "/inventario", label: "Inventario", icon: "box" as IconName, badge: "STOCK", active: true },
-              { href: "/compras", label: "Compras", icon: "recipe" as IconName },
-              { href: "/admin", label: "Administración", icon: "store" as IconName },
-            ].map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm transition focus:outline-none focus:ring-2 focus:ring-[#B58A60] ${item.active ? "bg-[#8B6347] font-medium text-white" : "text-[#C9B7A4] hover:bg-white/10"}`}
-              >
-                <Icon name={item.icon} className="h-5 w-5" />
-                {item.label}
-                {item.badge && <span className={`ml-auto rounded-md px-2 py-0.5 text-xs ${item.active ? "bg-white/20" : "bg-white/10"}`}>{item.badge}</span>}
-              </Link>
-            ))}
-          </nav>
-        </div>
-        <div className="mt-auto hidden border-t border-white/10 p-5 lg:block">
-          <p className="text-sm font-medium">Restaurante Orígenes</p>
-          <p className="mt-1 text-xs text-[#A99583]">Inventario · El Salvador</p>
-        </div>
-      </aside>
-
-      <section className="min-w-0 flex-1 lg:ml-64">
-        <header className="flex flex-wrap items-center justify-between gap-4 border-b border-border bg-surface px-5 py-5 md:px-8">
-          <div>
-            <p className="text-sm text-muted">Restaurante Orígenes SV / Operaciones</p>
-            <h1 className="mt-1 text-2xl font-bold">Inventario y recetas</h1>
-          </div>
-          <div className="flex items-center gap-3">
-            <label className="rounded-xl border border-border bg-white px-4 py-2">
-              <span className="block text-xs text-muted">Sucursal</span>
-              <select
-                className="bg-transparent text-sm font-semibold text-primary outline-none"
-                onChange={(event) => setBranchId(event.target.value)}
-                value={branchId}
-              >
-                {branches.map((branch) => <option key={branch.id} value={branch.id}>{branch.name}</option>)}
-              </select>
-            </label>
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#E9D8C5] font-bold text-[#67452F]">A</div>
-          </div>
-        </header>
+    <div className="min-h-screen bg-page text-ink">
+      <section className="min-w-0 flex-1">
+        <PageHeader titulo="Inventario y recetas" />
 
         <main className="p-5 md:p-8">
           <div className="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
@@ -432,14 +287,18 @@ export default function InventoryDashboard() {
                 <Icon name="plus" className="h-4 w-4" />
                 Nuevo producto
               </button>
-              <button
-                className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-white shadow-md transition hover:bg-[#493020] focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2"
-                onClick={() => openAdjustment()}
-                type="button"
-              >
-                <Icon name="history" className="h-4 w-4" />
-                Ajuste manual
-              </button>
+              <label className="inline-flex items-center justify-center gap-3 rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-white shadow-md focus-within:ring-2 focus-within:ring-accent focus-within:ring-offset-2">
+                <Icon name="store" className="h-4 w-4 shrink-0" />
+                <span className="sr-only">Sucursal</span>
+                <select
+                  aria-label="Seleccionar sucursal"
+                  className="cursor-pointer bg-primary text-sm font-semibold text-white outline-none"
+                  onChange={(event) => setBranchId(event.target.value)}
+                  value={branchId}
+                >
+                  {branches.map((branch) => <option key={branch.id} value={branch.id}>{branch.name}</option>)}
+                </select>
+              </label>
             </div>
           </div>
 
@@ -448,7 +307,7 @@ export default function InventoryDashboard() {
             <p><strong>Plantilla de demostración:</strong> los datos y cambios se guardan únicamente en memoria y se restablecen al recargar.</p>
           </div>
 
-          <section aria-label="Resumen de inventario" className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <section aria-label="Resumen de inventario" className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {stats.map((stat) => (
               <article key={stat.label} className="rounded-2xl border border-primary/10 bg-white p-5 shadow-sm">
                 <div className="flex items-start justify-between gap-4">
@@ -462,30 +321,6 @@ export default function InventoryDashboard() {
               </article>
             ))}
           </section>
-
-          {alerts.length > 0 ? (
-            <section className="mt-6 flex flex-col gap-4 rounded-2xl border border-amber-200 bg-amber-50 p-5 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-start gap-3">
-                <span className="rounded-xl bg-amber-100 p-2.5 text-amber-700"><Icon name="alert" /></span>
-                <div>
-                  <h2 className="font-bold text-amber-950">{alerts.length} alertas en sucursal {currentBranch.name}</h2>
-                  <p className="mt-1 text-sm leading-6 text-amber-900/70">{alerts.map((item) => item.name).join(" · ")}</p>
-                </div>
-              </div>
-              <button
-                className="shrink-0 rounded-lg border border-amber-300 bg-white px-4 py-2 text-sm font-bold text-amber-900 transition hover:bg-amber-100 focus:outline-none focus:ring-2 focus:ring-amber-500"
-                onClick={reviewAlerts}
-                type="button"
-              >
-                Revisar existencias
-              </button>
-            </section>
-          ) : (
-            <section className="mt-6 flex items-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-5 text-emerald-900">
-              <Icon name="check" />
-              <p className="text-sm font-semibold">Todas las existencias de {currentBranch.name} superan su stock mínimo.</p>
-            </section>
-          )}
 
           <div className="mt-8 border-b border-primary/10">
             <div aria-label="Vistas de inventario" className="flex gap-1 overflow-x-auto" role="tablist">
@@ -559,7 +394,7 @@ export default function InventoryDashboard() {
               </div>
 
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[1120px] text-left">
+                <table className="w-full min-w-[960px] text-left">
                   <thead>
                     <tr className="bg-page/70 text-xs font-bold uppercase tracking-wider text-ink/45">
                       <th className="px-6 py-4">Producto</th>
@@ -568,7 +403,6 @@ export default function InventoryDashboard() {
                       <th className="px-4 py-4">Existencias</th>
                       <th className="px-4 py-4">Mínimo</th>
                       <th className="px-4 py-4">Estado</th>
-                      <th className="px-6 py-4 text-right">Acción</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-primary/8">
@@ -601,15 +435,6 @@ export default function InventoryDashboard() {
                           </td>
                           <td className="px-4 py-4 text-sm text-ink/60">{formatQuantity(item.minStock, item.unit)}</td>
                           <td className="px-4 py-4"><StockBadge status={status} /></td>
-                          <td className="px-6 py-4 text-right">
-                            <button
-                              className="rounded-lg border border-primary/15 px-3 py-2 text-xs font-bold text-primary transition hover:border-accent hover:bg-accent/5 hover:text-accent focus:outline-none focus:ring-2 focus:ring-accent"
-                              onClick={() => openAdjustment(item.id)}
-                              type="button"
-                            >
-                              Ajustar
-                            </button>
-                          </td>
                         </tr>
                       );
                     })}
@@ -718,7 +543,7 @@ export default function InventoryDashboard() {
             <section className="mt-6 overflow-hidden rounded-2xl border border-primary/10 bg-white shadow-sm">
               <div className="border-b border-primary/10 p-5">
                 <h2 className="text-lg font-bold text-primary">Historial · {currentBranch.name}</h2>
-                <p className="mt-1 text-sm text-muted">Ajustes y movimientos recibidos desde otros módulos.</p>
+                <p className="mt-1 text-sm text-muted">Movimientos recibidos desde otros módulos.</p>
               </div>
               <div className="divide-y divide-primary/8">
                 {branchMovements.map((movement) => (
@@ -758,83 +583,6 @@ export default function InventoryDashboard() {
             onSave={createCatalogEntry}
             suppliers={suppliers}
           />
-        )}
-
-        {adjustmentOpen && (
-          <Modal
-            description={`Corregí existencias en sucursal ${currentBranch.name}.`}
-            onClose={() => setAdjustmentOpen(false)}
-            title="Ajuste manual de inventario"
-          >
-            <form className="space-y-5 p-6" onSubmit={registerAdjustment}>
-              <label className="block text-sm font-semibold text-primary">
-                Insumo o producto de reventa
-                <select
-                  autoFocus
-                  className="mt-2 w-full rounded-xl border border-primary/15 bg-white px-3 py-3 text-sm font-normal outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
-                  onChange={(event) => setAdjustmentItemId(event.target.value)}
-                  value={adjustmentItemId}
-                >
-                  {branchItems.map((item) => (
-                    <option key={item.id} value={item.id}>{item.name} · {formatQuantity(item.stock, item.unit)}</option>
-                  ))}
-                </select>
-              </label>
-              <label className="block text-sm font-semibold text-primary">
-                Tipo de ajuste
-                <select
-                  className="mt-2 w-full rounded-xl border border-primary/15 bg-white px-3 py-3 text-sm font-normal outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
-                  onChange={(event) => setAdjustmentDirection(event.target.value as "incremento" | "disminucion")}
-                  value={adjustmentDirection}
-                >
-                  <option value="incremento">Incrementar existencias</option>
-                  <option value="disminucion">Disminuir existencias</option>
-                </select>
-              </label>
-              <label className="block text-sm font-semibold text-primary">
-                Cantidad a ajustar {selectedAdjustmentItem ? `(${selectedAdjustmentItem.unit})` : ""}
-                <input
-                  className="mt-2 w-full rounded-xl border border-primary/15 px-3 py-3 text-sm font-normal outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
-                  min="0.01"
-                  onChange={(event) => setAdjustmentQuantity(event.target.value)}
-                  placeholder="Ej. 10"
-                  required
-                  step="0.01"
-                  type="number"
-                  value={adjustmentQuantity}
-                />
-              </label>
-              <label className="block text-sm font-semibold text-primary">
-                Motivo del ajuste
-                <input
-                  className="mt-2 w-full rounded-xl border border-primary/15 px-3 py-3 text-sm font-normal outline-none placeholder:text-ink/30 focus:border-accent focus:ring-2 focus:ring-accent/20"
-                  onChange={(event) => setAdjustmentReason(event.target.value)}
-                  placeholder="Ej. Diferencia en conteo físico"
-                  required
-                  type="text"
-                  value={adjustmentReason}
-                />
-              </label>
-              <div className="rounded-xl bg-page p-4 text-xs leading-5 text-muted">
-                Este formulario solo corrige existencias. Las adquisiciones se recibirán desde el flujo de abastecimiento.
-              </div>
-              <div className="flex justify-end gap-3 border-t border-primary/10 pt-5">
-                <button
-                  className="rounded-xl border border-primary/15 px-4 py-2.5 text-sm font-bold text-ink/60 transition hover:bg-page focus:outline-none focus:ring-2 focus:ring-accent"
-                  onClick={() => setAdjustmentOpen(false)}
-                  type="button"
-                >
-                  Cancelar
-                </button>
-                <button
-                  className="rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-white transition hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-accent"
-                  type="submit"
-                >
-                  Guardar ajuste
-                </button>
-              </div>
-            </form>
-          </Modal>
         )}
 
         {selectedProduct && (
