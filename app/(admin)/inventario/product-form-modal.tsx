@@ -2,7 +2,16 @@
 
 import { useState } from "react";
 import type { FormEvent } from "react";
-import type { Ingredient, Product } from "./inventory-data";
+import { createEmptyStockLevels } from "./inventory-data";
+import type {
+  InventoryItem,
+  InventoryItemKind,
+  Product,
+  Supplier,
+  Unit,
+} from "./inventory-data";
+
+type CatalogKind = "elaborado" | InventoryItemKind;
 
 type RecipeDraft = {
   key: string;
@@ -10,27 +19,40 @@ type RecipeDraft = {
   quantity: string;
 };
 
+export type ProductFormResult = {
+  product?: Product;
+  item?: InventoryItem;
+};
+
 type ProductFormModalProps = {
-  ingredients: Ingredient[];
-  existingProductNames: string[];
+  items: InventoryItem[];
+  suppliers: Supplier[];
+  existingNames: string[];
+  existingSkus: string[];
   onClose: () => void;
-  onSave: (product: Product, resaleIngredient?: Ingredient) => void;
+  onSave: (result: ProductFormResult) => void;
 };
 
 export default function ProductFormModal({
-  ingredients,
-  existingProductNames,
+  items,
+  suppliers,
+  existingNames,
+  existingSkus,
   onClose,
   onSave,
 }: ProductFormModalProps) {
+  const ingredients = items.filter((item) => item.kind === "insumo");
   const [name, setName] = useState("");
   const [category, setCategory] = useState("");
+  const [sku, setSku] = useState("");
   const [price, setPrice] = useState("");
-  const [kind, setKind] = useState<Product["kind"]>("elaborado");
+  const [kind, setKind] = useState<CatalogKind>("elaborado");
+  const [unit, setUnit] = useState<Unit>("unidad");
+  const [minStock, setMinStock] = useState("10");
+  const [supplierIds, setSupplierIds] = useState<string[]>([]);
   const [recipe, setRecipe] = useState<RecipeDraft[]>([
     { key: "recipe-0", ingredientId: ingredients[0]?.id ?? "", quantity: "" },
   ]);
-  const [minStock, setMinStock] = useState("10");
   const [error, setError] = useState("");
 
   function updateRecipe(key: string, field: "ingredientId" | "quantity", value: string) {
@@ -50,86 +72,121 @@ export default function ProductFormModal({
     ]);
   }
 
+  function toggleSupplier(supplierId: string) {
+    setSupplierIds((current) =>
+      current.includes(supplierId)
+        ? current.filter((id) => id !== supplierId)
+        : [...current, supplierId],
+    );
+  }
+
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const normalizedName = name.trim();
     const normalizedCategory = category.trim();
-    const numericPrice = Number(price);
+    const normalizedSku = sku.trim().toUpperCase();
 
-    if (!normalizedName || !normalizedCategory) {
-      setError("Completá el nombre y la categoría del producto.");
+    if (!normalizedName || !normalizedCategory || !normalizedSku) {
+      setError("Completá el nombre, la categoría y el SKU.");
       return;
     }
-    if (existingProductNames.some((item) => item.toLocaleLowerCase("es") === normalizedName.toLocaleLowerCase("es"))) {
-      setError("Ya existe un producto con ese nombre.");
+    if (existingNames.some((item) => item.toLocaleLowerCase("es") === normalizedName.toLocaleLowerCase("es"))) {
+      setError("Ya existe un producto o insumo con ese nombre.");
       return;
     }
-    if (!Number.isFinite(numericPrice) || numericPrice <= 0) {
-      setError("Ingresá un precio de venta mayor que cero.");
+    if (existingSkus.some((item) => item.toLocaleLowerCase("es") === normalizedSku.toLocaleLowerCase("es"))) {
+      setError("El SKU ya está asignado a otro producto.");
       return;
     }
 
-    const timestamp = Date.now();
+    const recordId = normalizedSku.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+    let numericPrice = 0;
+    if (kind !== "insumo") {
+      numericPrice = Number(price);
+      if (!Number.isFinite(numericPrice) || numericPrice <= 0) {
+        setError("Ingresá un precio de venta mayor que cero.");
+        return;
+      }
+    }
 
-    if (kind === "reventa") {
+    if (kind === "insumo" || kind === "reventa") {
+      if (supplierIds.length === 0) {
+        setError("Seleccioná al menos un proveedor disponible.");
+        return;
+      }
       const numericMinStock = Number(minStock);
-      if (!Number.isInteger(numericMinStock) || numericMinStock < 0) {
-        setError("El stock mínimo debe ser una unidad entera igual o mayor que cero.");
+      const itemUnit: Unit = kind === "reventa" ? "unidad" : unit;
+      if (
+        !Number.isFinite(numericMinStock) ||
+        numericMinStock < 0 ||
+        (itemUnit === "unidad" && !Number.isInteger(numericMinStock))
+      ) {
+        setError("Ingresá un stock mínimo válido para la unidad seleccionada.");
         return;
       }
 
-      const ingredientId = `reventa-${timestamp}`;
-      const resaleIngredient: Ingredient = {
-        id: ingredientId,
-        sku: `REV-${timestamp.toString().slice(-6)}`,
+      const item: InventoryItem = {
+        id: `${kind}-${recordId}`,
+        sku: normalizedSku,
         name: normalizedName,
-        category: "Reventa",
-        stock: 0,
-        minStock: numericMinStock,
-        unit: "unidad",
-        updatedAt: "Ahora",
+        category: normalizedCategory,
+        kind,
+        unit: itemUnit,
+        supplierIds,
+        stockByBranch: createEmptyStockLevels(numericMinStock),
       };
-      onSave(
-        {
-          id: `product-${timestamp}`,
+
+      if (kind === "insumo") {
+        onSave({ item });
+        return;
+      }
+
+      onSave({
+        item,
+        product: {
+          id: `product-${recordId}`,
+          sku: normalizedSku,
           name: normalizedName,
           category: normalizedCategory,
           price: numericPrice,
-          kind,
-          recipe: [{ ingredientId, quantity: 1 }],
+          kind: "reventa",
+          recipe: [{ ingredientId: item.id, quantity: 1 }],
         },
-        resaleIngredient,
-      );
+      });
       return;
     }
 
-    if (recipe.length === 0) {
-      setError("Agregá al menos un ingrediente a la receta.");
+    if (ingredients.length === 0 || recipe.length === 0) {
+      setError("Necesitás al menos un insumo para crear una receta.");
       return;
     }
-
     const ingredientIds = recipe.map((item) => item.ingredientId);
     if (new Set(ingredientIds).size !== ingredientIds.length) {
       setError("Cada ingrediente puede aparecer solamente una vez en la receta.");
       return;
     }
-
     const parsedRecipe = recipe.map((item) => ({
       ingredientId: item.ingredientId,
       quantity: Number(item.quantity),
     }));
-    if (parsedRecipe.some((item) => !item.ingredientId || !Number.isFinite(item.quantity) || item.quantity <= 0)) {
-      setError("Cada ingrediente debe tener una cantidad mayor que cero.");
+    if (parsedRecipe.some((item) => {
+      const ingredient = ingredients.find((current) => current.id === item.ingredientId);
+      return !ingredient || !Number.isFinite(item.quantity) || item.quantity <= 0;
+    })) {
+      setError("Cada ingrediente debe ser un insumo válido con cantidad mayor que cero.");
       return;
     }
 
     onSave({
-      id: `product-${timestamp}`,
-      name: normalizedName,
-      category: normalizedCategory,
-      price: numericPrice,
-      kind,
-      recipe: parsedRecipe,
+      product: {
+        id: `product-${recordId}`,
+          sku: normalizedSku,
+        name: normalizedName,
+        category: normalizedCategory,
+        price: numericPrice,
+        kind: "elaborado",
+        recipe: parsedRecipe,
+      },
     });
   }
 
@@ -148,11 +205,9 @@ export default function ProductFormModal({
       >
         <div className="flex items-start justify-between border-b border-primary/10 px-6 py-5">
           <div>
-            <h2 id="product-modal-title" className="text-xl font-bold text-primary">
-              Nuevo producto
-            </h2>
+            <h2 id="product-modal-title" className="text-xl font-bold text-primary">Nuevo producto</h2>
             <p id="product-modal-description" className="mt-1 text-sm text-muted">
-              Creá un producto del menú y definí cómo controlará sus existencias.
+              Registrá una receta de menú, un item de reventa o un insumo.
             </p>
           </div>
           <button
@@ -168,7 +223,7 @@ export default function ProductFormModal({
         <form className="space-y-5 p-6" onSubmit={handleSubmit}>
           <div className="grid gap-5 sm:grid-cols-2">
             <label className="block text-sm font-semibold text-primary">
-              Nombre del producto
+              Nombre
               <input
                 autoFocus
                 className="mt-2 w-full rounded-xl border border-primary/15 px-3 py-3 text-sm font-normal outline-none placeholder:text-ink/30 focus:border-accent focus:ring-2 focus:ring-accent/20"
@@ -191,16 +246,14 @@ export default function ProductFormModal({
               />
             </label>
             <label className="block text-sm font-semibold text-primary">
-              Precio de venta (USD)
+              SKU
               <input
-                className="mt-2 w-full rounded-xl border border-primary/15 px-3 py-3 text-sm font-normal outline-none placeholder:text-ink/30 focus:border-accent focus:ring-2 focus:ring-accent/20"
-                min="0.01"
-                onChange={(event) => setPrice(event.target.value)}
-                placeholder="0.00"
+                className="mt-2 w-full rounded-xl border border-primary/15 px-3 py-3 text-sm font-normal uppercase outline-none placeholder:text-ink/30 focus:border-accent focus:ring-2 focus:ring-accent/20"
+                onChange={(event) => setSku(event.target.value)}
+                placeholder="Ej. INS-PAN-001"
                 required
-                step="0.01"
-                type="number"
-                value={price}
+                type="text"
+                value={sku}
               />
             </label>
             <label className="block text-sm font-semibold text-primary">
@@ -208,22 +261,38 @@ export default function ProductFormModal({
               <select
                 className="mt-2 w-full rounded-xl border border-primary/15 bg-white px-3 py-3 text-sm font-normal outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
                 onChange={(event) => {
-                  setKind(event.target.value as Product["kind"]);
+                  setKind(event.target.value as CatalogKind);
                   setError("");
                 }}
                 value={kind}
               >
-                <option value="elaborado">Elaborado con receta</option>
-                <option value="reventa">Empacado para reventa</option>
+                <option value="elaborado">Receta de menú</option>
+                <option value="reventa">Item de reventa</option>
+                <option value="insumo">Insumo / ingrediente</option>
               </select>
             </label>
+            {kind !== "insumo" && (
+              <label className="block text-sm font-semibold text-primary">
+                Precio de venta (USD)
+                <input
+                  className="mt-2 w-full rounded-xl border border-primary/15 px-3 py-3 text-sm font-normal outline-none placeholder:text-ink/30 focus:border-accent focus:ring-2 focus:ring-accent/20"
+                  min="0.01"
+                  onChange={(event) => setPrice(event.target.value)}
+                  placeholder="0.00"
+                  required
+                  step="0.01"
+                  type="number"
+                  value={price}
+                />
+              </label>
+            )}
           </div>
 
           {kind === "elaborado" ? (
             <fieldset className="rounded-2xl border border-primary/10 p-4">
               <legend className="px-2 text-sm font-bold text-primary">Receta por unidad</legend>
               <p className="mb-4 text-xs leading-5 text-muted">
-                Seleccioná los insumos y las cantidades que consumirá el POS al vender una unidad.
+                Solo se pueden seleccionar insumos. Los items de reventa no forman parte de las recetas.
               </p>
               <div className="space-y-3">
                 {recipe.map((item, index) => {
@@ -238,9 +307,7 @@ export default function ProductFormModal({
                           value={item.ingredientId}
                         >
                           {ingredients.map((option) => (
-                            <option key={option.id} value={option.id}>
-                              {option.name}
-                            </option>
+                            <option key={option.id} value={option.id}>{option.name}</option>
                           ))}
                         </select>
                       </label>
@@ -278,30 +345,76 @@ export default function ProductFormModal({
               </button>
             </fieldset>
           ) : (
-            <fieldset className="rounded-2xl border border-primary/10 p-4">
-              <legend className="px-2 text-sm font-bold text-primary">Existencia de reventa</legend>
-              <p className="mb-4 text-xs leading-5 text-muted">
-                Se creará una existencia asociada sin unidades iniciales. El abastecimiento registrará las adquisiciones.
-              </p>
-              <label className="block text-sm font-semibold text-primary">
-                Stock mínimo (unidades)
-                <input
-                  className="mt-2 w-full rounded-xl border border-primary/15 px-3 py-3 text-sm font-normal outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
-                  min="0"
-                  onChange={(event) => setMinStock(event.target.value)}
-                  required
-                  step="1"
-                  type="number"
-                  value={minStock}
-                />
-              </label>
-            </fieldset>
+            <div className="space-y-5">
+              <fieldset className="rounded-2xl border border-primary/10 p-4">
+                <legend className="px-2 text-sm font-bold text-primary">Proveedores disponibles</legend>
+                <p className="mb-4 text-xs leading-5 text-muted">
+                  Seleccioná uno o varios proveedores que pueden suministrar este producto.
+                </p>
+                {suppliers.length > 0 ? (
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {suppliers.map((supplier) => (
+                      <label key={supplier.id} className="flex cursor-pointer items-start gap-3 rounded-xl bg-page p-3 text-sm">
+                        <input
+                          checked={supplierIds.includes(supplier.id)}
+                          className="mt-1 h-4 w-4 accent-[#65432f]"
+                          onChange={() => toggleSupplier(supplier.id)}
+                          type="checkbox"
+                        />
+                        <span>
+                          <span className="block font-bold text-primary">{supplier.name}</span>
+                          <span className="mt-1 block text-xs text-muted">{supplier.contact}</span>
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="rounded-xl bg-amber-50 p-3 text-sm text-amber-900">
+                    Primero registrá un proveedor desde la pestaña Proveedores.
+                  </p>
+                )}
+              </fieldset>
+
+              <fieldset className="rounded-2xl border border-primary/10 p-4">
+                <legend className="px-2 text-sm font-bold text-primary">Control de existencias</legend>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  {kind === "insumo" && (
+                    <label className="text-sm font-semibold text-primary">
+                      Unidad de medida
+                      <select
+                        className="mt-2 w-full rounded-xl border border-primary/15 bg-white px-3 py-3 text-sm font-normal outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
+                        onChange={(event) => setUnit(event.target.value as Unit)}
+                        value={unit}
+                      >
+                        <option value="unidad">Unidad</option>
+                        <option value="g">Gramos (g)</option>
+                        <option value="ml">Mililitros (ml)</option>
+                      </select>
+                    </label>
+                  )}
+                  <label className="text-sm font-semibold text-primary">
+                    Stock mínimo por sucursal {kind === "reventa" ? "(unidades)" : `(${unit})`}
+                    <input
+                      className="mt-2 w-full rounded-xl border border-primary/15 px-3 py-3 text-sm font-normal outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
+                      min="0"
+                      onChange={(event) => setMinStock(event.target.value)}
+                      required
+                      step={kind === "reventa" || unit === "unidad" ? "1" : "0.01"}
+                      type="number"
+                      value={minStock}
+                    />
+                  </label>
+                </div>
+              </fieldset>
+            </div>
           )}
 
           <div className="rounded-xl bg-page p-4 text-xs leading-5 text-muted">
             {kind === "elaborado"
-              ? "El producto elaborado no tendrá stock terminado: su disponibilidad dependerá de los ingredientes de la receta."
-              : "La existencia comenzará en cero. Las unidades adquiridas ingresarán mediante el flujo de abastecimiento."}
+              ? "La receta aparecerá en el menú y su disponibilidad dependerá de los insumos."
+              : kind === "reventa"
+                ? "El item aparecerá en el menú y comenzará sin existencias; abastecimiento registrará las adquisiciones."
+                : "El insumo no aparecerá en el menú y comenzará sin existencias en todas las sucursales."}
           </div>
 
           {error && (
