@@ -210,7 +210,7 @@ export default function VentasPage() {
         </header>
 
         {/* ÁREA DE TRABAJO */}
-        <div className="grid min-h-[calc(100vh-90px)] grid-cols-1 xl:grid-cols-[minmax(0,1fr)_380px]">
+        <div className="grid min-h-[calc(100vh-90px)] grid-cols-1 lg:grid-cols-[minmax(0,1fr)_360px]">
 
           {/* CATÁLOGO */}
           <section className="p-5 md:p-8">
@@ -271,17 +271,17 @@ export default function VentasPage() {
               {filteredProducts.map((product) => (
                 <article
                   key={product.id}
-                  className="group rounded-2xl border border-[#E9DFD3] bg-white p-4 shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
+                  className="group rounded-2xl border border-[#E9DFD3] bg-white p-3 shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
                 >
-                  <div className="mb-4 overflow-hidden rounded-xl bg-[#F5EEE5]">
+                  <div className="mb-3 flex h-36 items-center justify-center overflow-hidden rounded-xl bg-[#F5EEE5]">
                   <Image
                   src={product.image}
-                  alt={product.name}
-                  width={300}
-                  height={200}
-                  className="h-32 w-full object-cover transition duration-300 group-hover:scale-105"
-                  />
-                </div>
+                 alt={product.name}
+                 width={300}
+                 height={200}
+                 className="h-full w-full object-contain transition duration-300 group-hover:scale-105"
+                 />
+              </div>
 
                   <p className="text-xs font-medium uppercase tracking-wider text-[#A27B59]">
                     {product.category}
@@ -291,7 +291,7 @@ export default function VentasPage() {
                     {product.name}
                   </h5>
 
-                  <p className="mt-1 min-h-10 text-xs text-[#927D6B]">
+                  <p className="mt-1 min-h-8 text-xs text-[#927D6B]">
                     {product.description}
                   </p>
 
@@ -319,7 +319,7 @@ export default function VentasPage() {
           </section>
 
           {/* CARRITO */}
-          <aside className="flex flex-col border-t border-[#E8DED1] bg-[#FBF9F5] xl:border-l xl:border-t-0">
+          <aside className="flex flex-col border-t border-[#E8DED1] bg-[#FBF9F5] lg:sticky lg:top-0 lg:h-screen lg:overflow-y-auto lg:border-l lg:border-t-0">
 
             <div className="border-b border-[#E8DED1] p-6">
               <div className="flex items-center justify-between">
