@@ -6,11 +6,13 @@ import type { FormEvent } from "react";
 import {
   initialIngredients,
   initialMovements,
-  products,
+  products as initialProducts,
 } from "./inventory-data";
+import ProductFormModal from "./product-form-modal";
 import type {
   Ingredient,
   Movement,
+  Product,
   Unit,
 } from "./inventory-data";
 
@@ -160,6 +162,7 @@ function Modal({
 
 export default function InventoryDashboard() {
   const [ingredients, setIngredients] = useState(initialIngredients);
+  const [products, setProducts] = useState(initialProducts);
   const [movements, setMovements] = useState(initialMovements);
   const [activeTab, setActiveTab] = useState<Tab>("existencias");
   const [search, setSearch] = useState("");
@@ -168,6 +171,7 @@ export default function InventoryDashboard() {
   const [productSearch, setProductSearch] = useState("");
   const [productKind, setProductKind] = useState("todos");
   const [entryOpen, setEntryOpen] = useState(false);
+  const [productFormOpen, setProductFormOpen] = useState(false);
   const [entryIngredientId, setEntryIngredientId] = useState(initialIngredients[0].id);
   const [entryQuantity, setEntryQuantity] = useState("");
   const [entryReference, setEntryReference] = useState("");
@@ -209,7 +213,7 @@ export default function InventoryDashboard() {
       const matchesKind = productKind === "todos" || product.kind === productKind;
       return matchesSearch && matchesKind;
     });
-  }, [productKind, productSearch]);
+  }, [productKind, productSearch, products]);
 
   const alerts = ingredients.filter((ingredient) => getStockStatus(ingredient) !== "disponible");
   const selectedProduct = products.find((product) => product.id === selectedProductId);
@@ -264,6 +268,31 @@ export default function InventoryDashboard() {
       type: "success",
       message: `Entrada registrada: +${formatQuantity(quantity, ingredient.unit)} de ${ingredient.name}.`,
     });
+  }
+
+  function createProduct(product: Product, resaleIngredient?: Ingredient) {
+    setProducts((current) => [...current, product]);
+    if (resaleIngredient) {
+      setIngredients((current) => [...current, resaleIngredient]);
+      if (resaleIngredient.stock > 0) {
+        setMovements((current) => [
+          {
+            id: `inicial-${Date.now()}`,
+            type: "entrada",
+            item: resaleIngredient.name,
+            quantity: `+${formatQuantity(resaleIngredient.stock, resaleIngredient.unit)}`,
+            detail: "Stock inicial al crear producto de reventa",
+            time: currentTime(),
+            user: "Demo",
+          },
+          ...current,
+        ]);
+      }
+    }
+    setProductFormOpen(false);
+    setProductSearch("");
+    setProductKind("todos");
+    setToast({ type: "success", message: `${product.name} se agregó correctamente al menú.` });
   }
 
   function reviewAlerts() {
@@ -603,7 +632,7 @@ export default function InventoryDashboard() {
                   Las recetas definen los insumos que el módulo de ventas consumirá al registrar una orden.
                 </p>
               </div>
-              <div className="flex flex-col gap-3 sm:flex-row">
+              <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
                 <label className="relative">
                   <span className="sr-only">Buscar producto</span>
                   <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-ink/35">
@@ -627,6 +656,14 @@ export default function InventoryDashboard() {
                   <option value="elaborado">Elaborados</option>
                   <option value="reventa">Reventa</option>
                 </select>
+                <button
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#493020] focus:outline-none focus:ring-2 focus:ring-accent"
+                  onClick={() => setProductFormOpen(true)}
+                  type="button"
+                >
+                  <Icon name="plus" className="h-4 w-4" />
+                  Nuevo producto
+                </button>
               </div>
             </div>
 
@@ -726,6 +763,15 @@ export default function InventoryDashboard() {
       <footer className="border-t border-primary/10 py-6 text-center text-xs font-medium text-ink/40">
         Orígenes SV · Inventario frontend · Datos simulados
       </footer>
+
+      {productFormOpen && (
+        <ProductFormModal
+          existingProductNames={products.map((product) => product.name)}
+          ingredients={ingredients}
+          onClose={() => setProductFormOpen(false)}
+          onSave={createProduct}
+        />
+      )}
 
       {entryOpen && (
         <Modal
