@@ -11,7 +11,6 @@ import {
 import type {
   Ingredient,
   Movement,
-  Product,
   Unit,
 } from "./inventory-data";
 
@@ -264,59 +263,6 @@ export default function InventoryDashboard() {
     setToast({
       type: "success",
       message: `Entrada registrada: +${formatQuantity(quantity, ingredient.unit)} de ${ingredient.name}.`,
-    });
-  }
-
-  function simulateSale(product: Product) {
-    const missing = product.recipe
-      .map((item) => ({ item, ingredient: ingredientById.get(item.ingredientId) }))
-      .find(({ item, ingredient }) => !ingredient || ingredient.stock < item.quantity);
-
-    if (missing) {
-      setToast({
-        type: "error",
-        message: `No hay suficiente ${missing.ingredient?.name ?? "insumo"} para vender ${product.name}.`,
-      });
-      return;
-    }
-
-    const time = currentTime();
-    const recipeDetail = product.recipe
-      .map((item) => {
-        const ingredient = ingredientById.get(item.ingredientId);
-        return ingredient
-          ? `-${formatQuantity(item.quantity, ingredient.unit)} ${ingredient.name}`
-          : "";
-      })
-      .join(" · ");
-
-    setIngredients((current) =>
-      current.map((ingredient) => {
-        const recipeItem = product.recipe.find((item) => item.ingredientId === ingredient.id);
-        return recipeItem
-          ? {
-              ...ingredient,
-              stock: ingredient.stock - recipeItem.quantity,
-              updatedAt: time,
-            }
-          : ingredient;
-      }),
-    );
-    setMovements((current) => [
-      {
-        id: `venta-${Date.now()}`,
-        type: "venta",
-        item: product.name,
-        quantity: product.kind === "reventa" ? "-1 unidad" : "Receta descontada",
-        detail: `Venta simulada · ${recipeDetail}`,
-        time,
-        user: "Demo",
-      },
-      ...current,
-    ]);
-    setToast({
-      type: "success",
-      message: `Venta simulada de ${product.name}: inventario actualizado.`,
     });
   }
 
@@ -654,7 +600,7 @@ export default function InventoryDashboard() {
               <div>
                 <h2 className="text-lg font-bold text-primary">Menú y fichas técnicas</h2>
                 <p className="mt-1 text-sm text-ink/50">
-                  Cada venta simulada descuenta la receta completa o una unidad de reventa.
+                  Las recetas definen los insumos que el módulo de ventas consumirá al registrar una orden.
                 </p>
               </div>
               <div className="flex flex-col gap-3 sm:flex-row">
@@ -685,62 +631,47 @@ export default function InventoryDashboard() {
             </div>
 
             <div className="mt-5 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-              {filteredProducts.map((product) => {
-                const available = product.recipe.every((item) => {
-                  const ingredient = ingredientById.get(item.ingredientId);
-                  return ingredient && ingredient.stock >= item.quantity;
-                });
-                return (
-                  <article key={product.id} className="flex flex-col rounded-2xl border border-primary/10 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
-                    <div className="flex items-start justify-between gap-3">
-                      <span className={`rounded-full px-3 py-1 text-[10px] font-bold tracking-wider ${product.kind === "elaborado" ? "bg-[#E5EDE2] text-[#55704E]" : "bg-[#E8D9C8] text-[#79543A]"}`}>
-                        {product.kind === "elaborado" ? "ELABORADO" : "REVENTA"}
-                      </span>
-                      <span className="text-lg font-extrabold text-primary">{currencyFormatter.format(product.price)}</span>
-                    </div>
-                    <h3 className="mt-4 text-xl font-bold text-primary">{product.name}</h3>
-                    <p className="mt-1 text-sm text-ink/45">{product.category}</p>
-                    <div className="mt-5 flex-1">
-                      <p className="text-xs font-bold uppercase tracking-wider text-ink/40">
-                        {product.kind === "elaborado" ? "Consume por unidad" : "Existencia de reventa"}
-                      </p>
-                      <div className="mt-3 flex flex-wrap gap-2">
-                        {product.recipe.slice(0, 3).map((item) => {
-                          const ingredient = ingredientById.get(item.ingredientId);
-                          return ingredient ? (
-                            <span key={item.ingredientId} className="rounded-lg bg-page px-2.5 py-1.5 text-xs font-medium text-ink/65">
-                              {item.quantity} {ingredient.unit} {ingredient.name}
-                            </span>
-                          ) : null;
-                        })}
-                        {product.recipe.length > 3 && (
-                          <span className="rounded-lg bg-page px-2.5 py-1.5 text-xs font-semibold text-ink/45">
-                            +{product.recipe.length - 3} insumos
+              {filteredProducts.map((product) => (
+                <article key={product.id} className="flex flex-col rounded-2xl border border-primary/10 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+                  <div className="flex items-start justify-between gap-3">
+                    <span className={`rounded-full px-3 py-1 text-[10px] font-bold tracking-wider ${product.kind === "elaborado" ? "bg-[#E5EDE2] text-[#55704E]" : "bg-[#E8D9C8] text-[#79543A]"}`}>
+                      {product.kind === "elaborado" ? "ELABORADO" : "REVENTA"}
+                    </span>
+                    <span className="text-lg font-extrabold text-primary">{currencyFormatter.format(product.price)}</span>
+                  </div>
+                  <h3 className="mt-4 text-xl font-bold text-primary">{product.name}</h3>
+                  <p className="mt-1 text-sm text-ink/45">{product.category}</p>
+                  <div className="mt-5 flex-1">
+                    <p className="text-xs font-bold uppercase tracking-wider text-ink/40">
+                      {product.kind === "elaborado" ? "Consume por unidad" : "Existencia de reventa"}
+                    </p>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {product.recipe.slice(0, 3).map((item) => {
+                        const ingredient = ingredientById.get(item.ingredientId);
+                        return ingredient ? (
+                          <span key={item.ingredientId} className="rounded-lg bg-page px-2.5 py-1.5 text-xs font-medium text-ink/65">
+                            {item.quantity} {ingredient.unit} {ingredient.name}
                           </span>
-                        )}
-                      </div>
+                        ) : null;
+                      })}
+                      {product.recipe.length > 3 && (
+                        <span className="rounded-lg bg-page px-2.5 py-1.5 text-xs font-semibold text-ink/45">
+                          +{product.recipe.length - 3} insumos
+                        </span>
+                      )}
                     </div>
-                    <div className="mt-6 flex gap-2 border-t border-primary/10 pt-4">
-                      <button
-                        className="flex-1 rounded-xl border border-primary/15 px-3 py-2.5 text-sm font-bold text-primary transition hover:bg-page focus:outline-none focus:ring-2 focus:ring-accent"
-                        onClick={() => setSelectedProductId(product.id)}
-                        type="button"
-                      >
-                        Ver receta
-                      </button>
-                      <button
-                        className="flex-1 rounded-xl bg-primary px-3 py-2.5 text-sm font-bold text-white transition hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-accent disabled:cursor-not-allowed disabled:bg-ink/15"
-                        disabled={!available}
-                        onClick={() => simulateSale(product)}
-                        title={available ? "Descontar una venta del inventario" : "No hay existencias suficientes"}
-                        type="button"
-                      >
-                        {available ? "Vender 1" : "Sin existencias"}
-                      </button>
-                    </div>
-                  </article>
-                );
-              })}
+                  </div>
+                  <div className="mt-6 border-t border-primary/10 pt-4">
+                    <button
+                      className="w-full rounded-xl border border-primary/15 px-3 py-2.5 text-sm font-bold text-primary transition hover:bg-page focus:outline-none focus:ring-2 focus:ring-accent"
+                      onClick={() => setSelectedProductId(product.id)}
+                      type="button"
+                    >
+                      Ver receta
+                    </button>
+                  </div>
+                </article>
+              ))}
             </div>
             {filteredProducts.length === 0 && (
               <div className="mt-5 rounded-2xl border border-primary/10 bg-white px-6 py-16 text-center">
@@ -896,16 +827,15 @@ export default function InventoryDashboard() {
                 );
               })}
             </div>
+            <div className="mt-6 rounded-xl bg-page p-4 text-xs leading-5 text-muted">
+              Este detalle es informativo. Las órdenes y el descuento de existencias se gestionarán desde el módulo de ventas.
+            </div>
             <button
-              className="mt-6 w-full rounded-xl bg-primary px-4 py-3 text-sm font-bold text-white transition hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-accent"
-              onClick={() => {
-                setSelectedProductId(null);
-                setActiveTab("productos");
-                simulateSale(selectedProduct);
-              }}
+              className="mt-4 w-full rounded-xl bg-primary px-4 py-3 text-sm font-bold text-white transition hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-accent"
+              onClick={() => setSelectedProductId(null)}
               type="button"
             >
-              Simular venta y descontar
+              Cerrar detalle
             </button>
           </div>
         </Modal>
