@@ -2,10 +2,14 @@
 
 
 @theme {
-  --color-primary: #4a2c1a;
-  --color-accent: #c8843a;
-  --color-page: #faf6f0;
-  --color-ink: #2b1d14;
+  --color-primary: #65432f;
+  --color-sidebar: #30221b;
+  --color-accent: #a27b59;
+  --color-page: #f7f3ec;
+  --color-surface: #fbf9f5;
+  --color-ink: #35251d;
+  --color-muted: #927d6b;
+  --color-border: #e8ded1;
 }
 
 body {
