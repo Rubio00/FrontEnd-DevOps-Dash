@@ -174,6 +174,7 @@ export default function InventoryDashboard() {
   const [productFormOpen, setProductFormOpen] = useState(false);
   const [entryIngredientId, setEntryIngredientId] = useState(initialIngredients[0].id);
   const [entryQuantity, setEntryQuantity] = useState("");
+  const [entryDirection, setEntryDirection] = useState<"incremento" | "disminucion">("incremento");
   const [entryReference, setEntryReference] = useState("");
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
   const [toast, setToast] = useState<Toast | null>(null);
@@ -229,6 +230,7 @@ export default function InventoryDashboard() {
   function openEntry(ingredientId = ingredients[0].id) {
     setEntryIngredientId(ingredientId);
     setEntryQuantity("");
+    setEntryDirection("incremento");
     setEntryReference("");
     setEntryOpen(true);
   }
@@ -237,9 +239,20 @@ export default function InventoryDashboard() {
     event.preventDefault();
     const quantity = Number(entryQuantity);
     const ingredient = ingredientById.get(entryIngredientId);
+    const reason = entryReference.trim();
 
     if (!ingredient || !Number.isFinite(quantity) || quantity <= 0) {
-      setToast({ type: "error", message: "Ingresa una cantidad mayor que cero." });
+      setToast({ type: "error", message: "Ingresá una cantidad mayor que cero." });
+      return;
+    }
+    if (!reason) {
+      setToast({ type: "error", message: "El motivo del ajuste es obligatorio." });
+      return;
+    }
+
+    const signedQuantity = entryDirection === "incremento" ? quantity : -quantity;
+    if (ingredient.stock + signedQuantity < 0) {
+      setToast({ type: "error", message: "El ajuste no puede dejar existencias negativas." });
       return;
     }
 
@@ -247,17 +260,17 @@ export default function InventoryDashboard() {
     setIngredients((current) =>
       current.map((item) =>
         item.id === ingredient.id
-          ? { ...item, stock: item.stock + quantity, updatedAt: time }
+          ? { ...item, stock: item.stock + signedQuantity, updatedAt: time }
           : item,
       ),
     );
     setMovements((current) => [
       {
-        id: `entrada-${Date.now()}`,
-        type: "entrada",
+        id: `ajuste-${Date.now()}`,
+        type: "ajuste",
         item: ingredient.name,
-        quantity: `+${formatQuantity(quantity, ingredient.unit)}`,
-        detail: entryReference.trim() || "Entrada manual de demostración",
+        quantity: `${signedQuantity > 0 ? "+" : "-"}${formatQuantity(quantity, ingredient.unit)}`,
+        detail: `Ajuste manual · ${reason}`,
         time,
         user: "Demo",
       },
@@ -266,7 +279,7 @@ export default function InventoryDashboard() {
     setEntryOpen(false);
     setToast({
       type: "success",
-      message: `Entrada registrada: +${formatQuantity(quantity, ingredient.unit)} de ${ingredient.name}.`,
+      message: `Ajuste registrado para ${ingredient.name}.`,
     });
   }
 
@@ -274,20 +287,6 @@ export default function InventoryDashboard() {
     setProducts((current) => [...current, product]);
     if (resaleIngredient) {
       setIngredients((current) => [...current, resaleIngredient]);
-      if (resaleIngredient.stock > 0) {
-        setMovements((current) => [
-          {
-            id: `inicial-${Date.now()}`,
-            type: "entrada",
-            item: resaleIngredient.name,
-            quantity: `+${formatQuantity(resaleIngredient.stock, resaleIngredient.unit)}`,
-            detail: "Stock inicial al crear producto de reventa",
-            time: currentTime(),
-            user: "Demo",
-          },
-          ...current,
-        ]);
-      }
     }
     setProductFormOpen(false);
     setProductSearch("");
@@ -424,7 +423,7 @@ export default function InventoryDashboard() {
               type="button"
             >
               <Icon name="plus" className="h-4 w-4" />
-              Registrar entrada
+              Ajuste manual
             </button>
           </div>
 
@@ -601,7 +600,7 @@ export default function InventoryDashboard() {
                             onClick={() => openEntry(ingredient.id)}
                             type="button"
                           >
-                            + Entrada
+                            Ajustar
                           </button>
                         </td>
                       </tr>
@@ -775,13 +774,13 @@ export default function InventoryDashboard() {
 
       {entryOpen && (
         <Modal
-          description="La cantidad se sumará a las existencias actuales."
+          description="Corregí existencias por conteo, merma o diferencia de inventario."
           onClose={() => setEntryOpen(false)}
-          title="Registrar entrada de inventario"
+          title="Ajuste manual de inventario"
         >
           <form className="space-y-5 p-6" onSubmit={registerEntry}>
             <label className="block text-sm font-semibold text-primary">
-              Insumo
+              Insumo o producto de reventa
               <select
                 autoFocus
                 className="mt-2 w-full rounded-xl border border-primary/15 bg-white px-3 py-3 text-sm font-normal outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
@@ -796,12 +795,23 @@ export default function InventoryDashboard() {
               </select>
             </label>
             <label className="block text-sm font-semibold text-primary">
-              Cantidad recibida {selectedEntryIngredient ? `(${selectedEntryIngredient.unit})` : ""}
+              Tipo de ajuste
+              <select
+                className="mt-2 w-full rounded-xl border border-primary/15 bg-white px-3 py-3 text-sm font-normal outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
+                onChange={(event) => setEntryDirection(event.target.value as "incremento" | "disminucion")}
+                value={entryDirection}
+              >
+                <option value="incremento">Incrementar existencias</option>
+                <option value="disminucion">Disminuir existencias</option>
+              </select>
+            </label>
+            <label className="block text-sm font-semibold text-primary">
+              Cantidad a ajustar {selectedEntryIngredient ? `(${selectedEntryIngredient.unit})` : ""}
               <input
                 className="mt-2 w-full rounded-xl border border-primary/15 px-3 py-3 text-sm font-normal outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
                 min="0.01"
                 onChange={(event) => setEntryQuantity(event.target.value)}
-                placeholder="Ej. 1000"
+                placeholder="Ej. 10"
                 required
                 step="0.01"
                 type="number"
@@ -809,17 +819,18 @@ export default function InventoryDashboard() {
               />
             </label>
             <label className="block text-sm font-semibold text-primary">
-              Referencia <span className="font-normal text-ink/40">(opcional)</span>
+              Motivo del ajuste
               <input
                 className="mt-2 w-full rounded-xl border border-primary/15 px-3 py-3 text-sm font-normal outline-none placeholder:text-ink/30 focus:border-accent focus:ring-2 focus:ring-accent/20"
                 onChange={(event) => setEntryReference(event.target.value)}
-                placeholder="Factura de compra o proveedor"
+                placeholder="Ej. Diferencia en conteo físico"
+                required
                 type="text"
                 value={entryReference}
               />
             </label>
-            <div className="rounded-xl bg-page p-4 text-xs leading-5 text-ink/55">
-              En la versión integrada, una factura de compra confirmada generará esta entrada automáticamente.
+            <div className="rounded-xl bg-page p-4 text-xs leading-5 text-muted">
+              Este formulario solo corrige existencias. Las adquisiciones de nuevos productos se recibirán desde el flujo de abastecimiento.
             </div>
             <div className="flex justify-end gap-3 border-t border-primary/10 pt-5">
               <button
@@ -833,7 +844,7 @@ export default function InventoryDashboard() {
                 className="rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-white transition hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-accent"
                 type="submit"
               >
-                Guardar entrada
+                Guardar ajuste
               </button>
             </div>
           </form>

@@ -30,7 +30,6 @@ export default function ProductFormModal({
   const [recipe, setRecipe] = useState<RecipeDraft[]>([
     { key: "recipe-0", ingredientId: ingredients[0]?.id ?? "", quantity: "" },
   ]);
-  const [initialStock, setInitialStock] = useState("0");
   const [minStock, setMinStock] = useState("10");
   const [error, setError] = useState("");
 
@@ -73,15 +72,9 @@ export default function ProductFormModal({
     const timestamp = Date.now();
 
     if (kind === "reventa") {
-      const numericInitialStock = Number(initialStock);
       const numericMinStock = Number(minStock);
-      if (
-        !Number.isInteger(numericInitialStock) ||
-        !Number.isInteger(numericMinStock) ||
-        numericInitialStock < 0 ||
-        numericMinStock < 0
-      ) {
-        setError("Las existencias deben ser unidades enteras iguales o mayores que cero.");
+      if (!Number.isInteger(numericMinStock) || numericMinStock < 0) {
+        setError("El stock mínimo debe ser una unidad entera igual o mayor que cero.");
         return;
       }
 
@@ -91,7 +84,7 @@ export default function ProductFormModal({
         sku: `REV-${timestamp.toString().slice(-6)}`,
         name: normalizedName,
         category: "Reventa",
-        stock: numericInitialStock,
+        stock: 0,
         minStock: numericMinStock,
         unit: "unidad",
         updatedAt: "Ahora",
@@ -288,41 +281,27 @@ export default function ProductFormModal({
             <fieldset className="rounded-2xl border border-primary/10 p-4">
               <legend className="px-2 text-sm font-bold text-primary">Existencia de reventa</legend>
               <p className="mb-4 text-xs leading-5 text-muted">
-                Se creará una existencia asociada y cada venta descontará una unidad desde el POS.
+                Se creará una existencia asociada sin unidades iniciales. El abastecimiento registrará las adquisiciones.
               </p>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <label className="text-sm font-semibold text-primary">
-                  Stock inicial (unidades)
-                  <input
-                    className="mt-2 w-full rounded-xl border border-primary/15 px-3 py-3 text-sm font-normal outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
-                    min="0"
-                    onChange={(event) => setInitialStock(event.target.value)}
-                    required
-                    step="1"
-                    type="number"
-                    value={initialStock}
-                  />
-                </label>
-                <label className="text-sm font-semibold text-primary">
-                  Stock mínimo (unidades)
-                  <input
-                    className="mt-2 w-full rounded-xl border border-primary/15 px-3 py-3 text-sm font-normal outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
-                    min="0"
-                    onChange={(event) => setMinStock(event.target.value)}
-                    required
-                    step="1"
-                    type="number"
-                    value={minStock}
-                  />
-                </label>
-              </div>
+              <label className="block text-sm font-semibold text-primary">
+                Stock mínimo (unidades)
+                <input
+                  className="mt-2 w-full rounded-xl border border-primary/15 px-3 py-3 text-sm font-normal outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
+                  min="0"
+                  onChange={(event) => setMinStock(event.target.value)}
+                  required
+                  step="1"
+                  type="number"
+                  value={minStock}
+                />
+              </label>
             </fieldset>
           )}
 
           <div className="rounded-xl bg-page p-4 text-xs leading-5 text-muted">
             {kind === "elaborado"
               ? "El producto elaborado no tendrá stock terminado: su disponibilidad dependerá de los ingredientes de la receta."
-              : "El stock inicial quedará registrado como una existencia local de demostración; las compras lo incrementarán en la integración final."}
+              : "La existencia comenzará en cero. Las unidades adquiridas ingresarán mediante el flujo de abastecimiento."}
           </div>
 
           {error && (
