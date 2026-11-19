@@ -1,6 +1,6 @@
 
 "use client";
-
+import Image from "next/image";
 import { useMemo, useState } from "react";
 
 type Product = {
@@ -8,7 +8,7 @@ type Product = {
   name: string;
   category: string;
   price: number;
-  emoji: string;
+  image: string;
   description: string;
 };
 
@@ -17,18 +17,18 @@ type CartItem = Product & {
 };
 
 const products: Product[] = [
-  { id: 1, name: "Espresso", category: "Cafés", price: 2.00, emoji: "☕", description: "Café intenso y aromático" },
-  { id: 2, name: "Americano", category: "Cafés", price: 2.50, emoji: "☕", description: "Espresso con agua caliente" },
-  { id: 3, name: "Cappuccino", category: "Cafés", price: 3.50, emoji: "🥛", description: "Espresso con leche espumada" },
-  { id: 4, name: "Latte Grande", category: "Cafés", price: 4.00, emoji: "☕", description: "Café con leche cremosa" },
-  { id: 5, name: "Mocha", category: "Cafés", price: 4.25, emoji: "🍫", description: "Café con chocolate" },
-  { id: 6, name: "Cold Brew", category: "Bebidas", price: 3.75, emoji: "🧋", description: "Café frío de extracción lenta" },
-  { id: 7, name: "Limonada", category: "Bebidas", price: 2.50, emoji: "🍋", description: "Limonada natural" },
-  { id: 8, name: "Té Helado", category: "Bebidas", price: 2.75, emoji: "🧊", description: "Té refrescante" },
-  { id: 9, name: "Cheesecake", category: "Postres", price: 3.50, emoji: "🍰", description: "Pastel cremoso de queso" },
-  { id: 10, name: "Brownie", category: "Postres", price: 2.75, emoji: "🍫", description: "Brownie de chocolate" },
-  { id: 11, name: "Croissant", category: "Alimentos", price: 2.50, emoji: "🥐", description: "Croissant recién horneado" },
-  { id: 12, name: "Sándwich Club", category: "Alimentos", price: 5.50, emoji: "🥪", description: "Sándwich especial de la casa" },
+  { id: 1, name: "Espresso", category: "Cafés", price: 2.00, image: "/images/productos/espresso.jpg", description: "Café intenso y aromático" },
+  { id: 2, name: "Americano", category: "Cafés", price: 2.50, image: "/images/productos/americano.jpg", description: "Espresso con agua caliente" },
+  { id: 3, name: "Cappuccino", category: "Cafés", price: 3.50, image: "/images/productos/cappuccino.jpg", description: "Espresso con leche espumada" },
+  { id: 4, name: "Latte Grande", category: "Cafés", price: 4.00, image: "/images/productos/latte-grande.jpg", description: "Café con leche cremosa" },
+  { id: 5, name: "Mocha", category: "Cafés", price: 4.25, image: "/images/productos/mocha.jpg", description: "Café con chocolate" },
+  { id: 6, name: "Cold Brew", category: "Bebidas", price: 3.75, image: "/images/productos/cold-brew.jpg", description: "Café frío de extracción lenta" },
+  { id: 7, name: "Limonada", category: "Bebidas", price: 2.50, image: "/images/productos/limonada.jpg", description: "Limonada natural" },
+  { id: 8, name: "Té Helado", category: "Bebidas", price: 2.75, image: "/images/productos/te-helado.jpg", description: "Té refrescante" },
+  { id: 9, name: "Cheesecake", category: "Postres", price: 3.50, image: "/images/productos/cheesecake.jpg", description: "Pastel cremoso de queso" },
+  { id: 10, name: "Brownie", category: "Postres", price: 2.75, image: "/images/productos/brownie.jpg", description: "Brownie de chocolate" },
+  { id: 11, name: "Croissant", category: "Alimentos", price: 2.50, image: "/images/productos/croissant.jpg", description: "Croissant recién horneado" },
+  { id: 12, name: "Sándwich Club", category: "Alimentos", price: 5.50, image: "/images/productos/sandwich-club.jpg", description: "Sándwich especial de la casa" },
 ];
 
 const categories = ["Todos", "Cafés", "Bebidas", "Postres", "Alimentos"];
@@ -273,9 +273,15 @@ export default function VentasPage() {
                   key={product.id}
                   className="group rounded-2xl border border-[#E9DFD3] bg-white p-4 shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
                 >
-                  <div className="mb-4 flex h-28 items-center justify-center rounded-xl bg-[#F5EEE5] text-5xl transition group-hover:bg-[#EFE1D1]">
-                    {product.emoji}
-                  </div>
+                  <div className="mb-4 overflow-hidden rounded-xl bg-[#F5EEE5]">
+                  <Image
+                  src={product.image}
+                  alt={product.name}
+                  width={300}
+                  height={200}
+                  className="h-32 w-full object-cover transition duration-300 group-hover:scale-105"
+                  />
+                </div>
 
                   <p className="text-xs font-medium uppercase tracking-wider text-[#A27B59]">
                     {product.category}
@@ -352,9 +358,15 @@ export default function VentasPage() {
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex items-center gap-3">
-                        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#F0E5D8] text-2xl">
-                          {item.emoji}
-                        </div>
+                        <div className="h-12 w-12 shrink-0 overflow-hidden rounded-xl">
+                      <Image
+                      src={item.image}
+                      alt={item.name}
+                      width={80}
+                      height={80}
+                      className="h-full w-full object-cover"
+                      />
+                      </div>
 
                         <div>
                           <p className="text-sm font-bold">
