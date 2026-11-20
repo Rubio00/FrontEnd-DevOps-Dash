@@ -430,7 +430,7 @@ export default function ProductFormModal({
                   </div>
                 ) : (
                   <p className="rounded-xl bg-amber-50 p-3 text-sm text-amber-900">
-                    Primero registrá un proveedor desde la pestaña Proveedores.
+                    Primero registrá un proveedor desde la pantalla Proveedores del menú.
                   </p>
                 )}
               </fieldset>

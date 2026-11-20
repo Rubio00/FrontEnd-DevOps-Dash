@@ -326,7 +326,7 @@ export default function VentasPage() {
     <main className="min-h-screen bg-[#F7F3EC] text-[#35251D]">
 
       {/* ENCABEZADO CAFÉ */}
-      <header className="sticky top-0 z-30 bg-[#30221B] px-6 py-5 text-white shadow-md">
+      <header className="sticky top-0 z-30 bg-primary px-6 py-5 text-white shadow-md">
         <div className="mx-auto flex max-w-[1600px] items-center justify-between">
           <div>
             <h1 className="text-xl font-bold tracking-wide">

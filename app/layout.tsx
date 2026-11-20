@@ -1,21 +1,15 @@
 import type { Metadata } from "next";
-import "../index.css";
+import "./index.css";
 
 export const metadata: Metadata = {
   title: "Orígenes SV",
   description: "Sistema de gestión de cafetería Orígenes SV",
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="es">
-      <body>
-        {children}
-      </body>
+      <body className="min-h-full flex flex-col">{children}</body>
     </html>
   );
 }

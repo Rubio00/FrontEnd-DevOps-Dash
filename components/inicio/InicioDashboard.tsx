@@ -1,6 +1,6 @@
 "use client";
 
-import { Playfair_Display } from "next/font/google";
+
 import { modulos } from "@/data/menu";
 import { sucursales } from "@/data/sucursales";
 import { usuarios } from "@/data/usuarios";
@@ -8,9 +8,9 @@ import { modulosBloqueados, modulosPorRol } from "@/lib/auth";
 import { etiquetasRol, roles } from "@/types/auth";
 import { useSesion } from "@/lib/useSesion";
 import ModuloCard from "@/components/inicio/ModuloCard";
-import ModuloIcon from "@/components/inicio/ModuloIcon";
 
-const playfair = Playfair_Display({ subsets: ["latin"], weight: ["600", "700"], display: "swap" });
+
+
 
 export default function InicioDashboard() {
   const { usuario, cambiarUsuario } = useSesion();
@@ -21,18 +21,9 @@ export default function InicioDashboard() {
 
   return (
     <div className="min-h-screen bg-page text-ink">
-      <header className="bg-sidebar text-[#F8F0E5]">
-        <div className="mx-auto flex max-w-6xl flex-col gap-6 px-6 py-8 md:flex-row md:items-center md:justify-between">
-          <div className="flex items-center gap-3">
-            <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#B58A60] text-white">
-              <ModuloIcon icono="inicio" className="h-6 w-6" />
-            </span>
-            <div>
-              <p className={`${playfair.className} text-xl font-bold tracking-wide`}>ORÍGENES SV</p>
-              <p className="text-xs text-[#C9B7A4]">Sistema de gestión · Inicio</p>
-            </div>
-          </div>
-
+      <header className="bg-primary text-[#F8F0E5]">
+                <div className="mx-auto flex max-w-6xl flex-col gap-6 px-6 py-8 md:flex-row md:items-center md:justify-end">
+          
           <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
             <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#E9D8C5] font-bold text-[#67452F]">
               {usuario.iniciales}

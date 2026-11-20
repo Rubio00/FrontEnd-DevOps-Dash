@@ -13,16 +13,14 @@ import {
 import CategoryManager from "./category-manager";
 import ProductFormModal from "./product-form-modal";
 import type { ProductFormResult } from "./product-form-modal";
-import SupplierManager from "./supplier-manager";
 import type {
   Category,
   InventoryItemKind,
   StockedInventoryItem,
-  Supplier,
   Unit,
 } from "./inventory-data";
 
-type Tab = "existencias" | "productos" | "categorias" | "proveedores" | "movimientos";
+type Tab = "existencias" | "productos" | "categorias" | "movimientos";
 type StockStatus = "disponible" | "bajo" | "agotado";
 type StatusFilter = "todos" | StockStatus;
 type ItemKindFilter = "todos" | InventoryItemKind;
@@ -148,7 +146,7 @@ export default function InventoryDashboard() {
   const [items, setItems] = useState(initialItems);
   const [products, setProducts] = useState(initialProducts);
   const [categories, setCategories] = useState(initialCategories);
-  const [suppliers, setSuppliers] = useState(initialSuppliers);
+    const [suppliers] = useState(initialSuppliers);
   const [movements] = useState(initialMovements);
   const [branchId, setBranchId] = useState(branches[0].id);
   const [activeTab, setActiveTab] = useState<Tab>("existencias");
@@ -222,21 +220,6 @@ export default function InventoryDashboard() {
     setToast({ type: "success", message: `${category.name} se agregó a las categorías del catálogo.` });
   }
 
-  function addSupplier(supplier: Supplier) {
-    setSuppliers((current) => [...current, supplier]);
-    setToast({ type: "success", message: `${supplier.name} se agregó a los proveedores.` });
-  }
-
-  function deleteSupplier(supplierId: string) {
-    const supplier = supplierById.get(supplierId);
-    setSuppliers((current) => current.filter((item) => item.id !== supplierId));
-    setItems((current) => current.map((item) => ({
-      ...item,
-      supplierIds: item.supplierIds.filter((id) => id !== supplierId),
-    })));
-    setToast({ type: "success", message: `${supplier?.name ?? "El proveedor"} se eliminó correctamente.` });
-  }
-
   const stats = [
     {
       label: "Insumos registrados",
@@ -265,7 +248,6 @@ export default function InventoryDashboard() {
     { id: "existencias", label: "Existencias", icon: "box", count: items.length },
     { id: "productos", label: "Menú y recetas", icon: "recipe", count: products.length },
     { id: "categorias", label: "Categorías", icon: "recipe", count: categories.length },
-    { id: "proveedores", label: "Proveedores", icon: "store", count: suppliers.length },
     { id: "movimientos", label: "Movimientos", icon: "history", count: branchMovements.length },
   ];
 
@@ -280,7 +262,7 @@ export default function InventoryDashboard() {
               <p className="text-sm font-medium uppercase tracking-widest text-accent">Control operativo</p>
               <h2 className="mt-2 text-2xl font-bold">Existencias y consumo por recetas</h2>
               <p className="mt-1 max-w-2xl text-sm leading-6 text-muted">
-                Gestioná insumos, reventa, recetas y proveedores por sucursal.
+                Gestioná insumos, reventa y recetas por sucursal.
               </p>
             </div>
             <div className="flex flex-col gap-3 sm:flex-row">
@@ -544,9 +526,8 @@ export default function InventoryDashboard() {
             <CategoryManager categories={categories} items={items} onAdd={addCategory} products={products} />
           )}
 
-          {activeTab === "proveedores" && (
-            <SupplierManager suppliers={suppliers} items={items} onAdd={addSupplier} onDelete={deleteSupplier} />
-          )}
+          
+
 
           {activeTab === "movimientos" && (
             <section className="mt-6 overflow-hidden rounded-2xl border border-primary/10 bg-white shadow-sm">

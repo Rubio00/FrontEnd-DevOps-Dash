@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+
 import { useEffect, useMemo, useState } from "react";
 import { Avatar, Icon, Modal, StatusBadge } from "./admin-ui";
 import type { IconName } from "./admin-ui";
@@ -194,31 +194,20 @@ export default function AdminDashboard() {
   ];
 
   return (
-    <div className="min-h-screen bg-page text-ink lg:flex">
-      <aside className="flex w-full flex-col bg-sidebar text-[#F8F0E5] lg:fixed lg:inset-y-0 lg:w-64">
-        <div className="border-b border-white/10 px-6 py-7">
-          <Link href="/admin" className="flex w-fit items-center gap-3"><span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#B58A60] text-white"><Icon name="store" className="h-6 w-6" /></span><span><span className="block text-lg font-bold tracking-wide">ORÍGENES SV</span><span className="block text-xs text-[#C9B7A4]">Sistema de gestión</span></span></Link>
-        </div>
-        <div className="px-5 py-7">
-          <p className="mb-4 text-xs font-semibold uppercase tracking-[0.2em] text-[#A99583]">Menú principal</p>
-          <nav aria-label="Módulos principales" className="space-y-2">
-            {[
-              { href: "/ventas", label: "Ventas", icon: "menu" as IconName, badge: "POS" },
-              { href: "/inventario", label: "Inventario", icon: "menu" as IconName, badge: "STOCK" },
-              { href: "/compras", label: "Compras", icon: "wallet" as IconName },
-              { href: "/admin", label: "Administración", icon: "users" as IconName, active: true },
-            ].map((item) => (
-              <Link key={item.href} href={item.href} className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm transition focus:outline-none focus:ring-2 focus:ring-[#B58A60] ${item.active ? "bg-[#8B6347] font-medium text-white" : "text-[#C9B7A4] hover:bg-white/10"}`}><Icon name={item.icon} />{item.label}{item.badge && <span className="ml-auto rounded-md bg-white/10 px-2 py-0.5 text-xs">{item.badge}</span>}</Link>
-            ))}
-          </nav>
-        </div>
-        <div className="mt-auto hidden border-t border-white/10 p-5 lg:block"><p className="text-sm font-medium">Restaurante Orígenes</p><p className="mt-1 text-xs text-[#A99583]">Administración · El Salvador</p></div>
-      </aside>
-
-      <section className="min-w-0 flex-1 lg:ml-64">
-        <header className="flex flex-wrap items-center justify-between gap-4 border-b border-border bg-surface px-5 py-5 md:px-8">
-          <div><p className="text-sm text-muted">Restaurante Orígenes SV / Configuración</p><h1 className="mt-1 text-2xl font-bold">Administración</h1></div>
-          <div className="flex items-center gap-3"><div className="hidden text-right sm:block"><p className="text-sm font-bold">Ana Rodríguez</p><p className="text-xs text-muted">Administradora</p></div><Avatar name="Ana Rodríguez" /></div>
+    <div className="min-h-screen bg-page text-ink ">
+      <section className="min-w-0">
+                <header className="flex flex-wrap items-center justify-between gap-4 bg-primary px-5 py-5 text-white shadow md:px-8">
+          <div>
+            <p className="text-sm text-[#C9B7A4]">Restaurante Orígenes SV / Configuración</p>
+            <h1 className="mt-1 text-2xl font-bold">Administración</h1>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="hidden text-right sm:block">
+              <p className="text-sm font-bold">Ana Rodríguez</p>
+              <p className="text-xs text-[#C9B7A4]">Administradora</p>
+            </div>
+            <Avatar name="Ana Rodríguez" />
+          </div>
         </header>
 
         <main className="p-5 md:p-8">
