@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Icon } from "@/components/Icon";
 import type { IconName } from "@/components/Icon";
+import { canAccess } from "@/lib/permissions";
 
 type Item = { href: string; label: string; icon: IconName; badge?: string };
 
@@ -17,11 +18,15 @@ const items: Item[] = [
   { href: "/planilla", label: "Planilla", icon: "payroll" },
   { href: "/sucursales", label: "Sucursales", icon: "branch" }, // descomentar cuando se una la rama de sucursales
   { href: "/admin", label: "Administración", icon: "users" },
-    { href: "/perfil", label: "Perfil", icon: "user" },
+  { href: "/perfil", label: "Perfil", icon: "user" },
 ];
 
-export default function Sidebar() {
+export default function Sidebar({ role }: { role: string }) {
   const pathname = usePathname();
+  const visibleItems = items.filter((item) =>
+    canAccess(item.href, role)
+  );
+
 
   return (
     <aside className="flex w-full flex-col bg-sidebar text-[#F8F0E5] lg:fixed lg:inset-y-0 lg:w-64">
@@ -40,15 +45,14 @@ export default function Sidebar() {
       <div className="px-5 py-7">
         <p className="mb-4 text-xs font-semibold uppercase tracking-[0.2em] text-[#A99583]">Menú principal</p>
         <nav aria-label="Módulos principales" className="space-y-2">
-          {items.map((item) => {
+          {visibleItems.map((item) => {
             const activo = pathname === item.href || pathname.startsWith(`${item.href}/`);
             return (
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm transition focus:outline-none focus:ring-2 focus:ring-[#B58A60] ${
-                  activo ? "bg-[#8B6347] font-medium text-white" : "text-[#C9B7A4] hover:bg-white/10"
-                }`}
+                className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm transition focus:outline-none focus:ring-2 focus:ring-[#B58A60] ${activo ? "bg-[#8B6347] font-medium text-white" : "text-[#C9B7A4] hover:bg-white/10"
+                  }`}
               >
                 <Icon name={item.icon} />
                 {item.label}

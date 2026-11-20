@@ -1,25 +1,48 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
+  const router = useRouter();
+
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
+  const [loading, setLoading] = useState(false);
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+
+  const handleSubmit = async (
+    e: React.FormEvent<HTMLFormElement>
+  ) => {
     e.preventDefault();
     setMessage("");
+    setLoading(true);
 
-    if (!email || !password) {
-      setMessage("Completa todos los campos.");
-      return;
+    try {
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setMessage(data.message || "Error al iniciar sesión");
+        return;
+      }
+
+      router.replace("/inicio");
+      router.refresh();
+    } catch {
+      setMessage("No se pudo conectar con el servidor");
+    } finally {
+      setLoading(false);
     }
-
-    setMessage(
-      "Interfaz lista. La autenticación se conectará posteriormente con el backend."
-    );
   };
 
   return (
