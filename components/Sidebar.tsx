@@ -10,6 +10,7 @@ type Item = { href: string; label: string; icon: IconName; badge?: string };
 const items: Item[] = [
   { href: "/inicio", label: "Inicio", icon: "home" },
   { href: "/ventas", label: "Ventas", icon: "menu", badge: "POS" },
+  { href: "/balance", label: "Balance de ventas", icon: "chart" },
   { href: "/inventario", label: "Inventario", icon: "menu", badge: "STOCK" },
   { href: "/compras", label: "Compras", icon: "wallet" },
   { href: "/proveedores", label: "Proveedores", icon: "truck" },
