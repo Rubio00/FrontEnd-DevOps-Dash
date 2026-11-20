@@ -1,8 +1,3 @@
-export type Branch = {
-  id: string;
-  name: string;
-};
-
 export type Role = {
   id: string;
   name: string;
@@ -11,37 +6,30 @@ export type Role = {
   active: boolean;
 };
 
+export type Employee = {
+  id: string;
+  name: string;
+  position: string;
+};
+
 export type RoleAssignment = {
   roleId: string;
   active: boolean;
   assignedAt: string;
 };
 
-export type Employee = {
+export type SystemUser = {
   id: string;
-  code: string;
-  name: string;
+  employeeId: string;
+  username: string;
   email: string;
-  phone: string;
-  dui: string;
-  position: string;
-  branchId: string;
-  salary: number;
-  hiredAt: string;
   active: boolean;
-  roleAssignments: RoleAssignment[];
-  username: string | null;
   lastAccess: string | null;
+  roleAssignments: RoleAssignment[];
 };
 
-export type EmployeeInput = Omit<Employee, "id" | "code" | "lastAccess">;
+export type UserInput = Omit<SystemUser, "id" | "lastAccess">;
 export type RoleInput = Omit<Role, "id" | "active">;
-
-export const branches: Branch[] = [
-  { id: "centro", name: "Centro" },
-  { id: "santa-tecla", name: "Santa Tecla" },
-  { id: "san-miguel", name: "San Miguel" },
-];
 
 export const permissionOptions = [
   "Gestionar ventas",
@@ -92,120 +80,60 @@ export const initialRoles: Role[] = [
   },
 ];
 
-export const initialEmployees: Employee[] = [
+export const existingEmployees: Employee[] = [
+  { id: "emp-1", name: "Ana María Rodríguez", position: "Gerente general" },
+  { id: "emp-2", name: "Carlos Eduardo Méndez", position: "Gerente de sucursal" },
+  { id: "emp-3", name: "Sofía Isabel Castro", position: "Cajera" },
+  { id: "emp-4", name: "Luis Alberto Hernández", position: "Barista senior" },
+  { id: "emp-5", name: "Marta Elena Flores", position: "Barista" },
+  { id: "emp-6", name: "Jorge Antonio Ramírez", position: "Cajero" },
+  { id: "emp-7", name: "Daniela Beatriz Ortiz", position: "Supervisora" },
+];
+
+export const initialUsers: SystemUser[] = [
   {
-    id: "emp-1",
-    code: "EMP-001",
-    name: "Ana María Rodríguez",
-    email: "ana.rodriguez@origenessv.example",
-    phone: "7890-1201",
-    dui: "01234567-8",
-    position: "Gerente general",
-    branchId: "centro",
-    salary: 1200,
-    hiredAt: "2023-02-15",
-    active: true,
-    roleAssignments: [{ roleId: "administrador", active: true, assignedAt: "2023-02-15" }],
+    id: "user-1",
+    employeeId: "emp-1",
     username: "ana.rodriguez",
+    email: "ana.rodriguez@origenessv.example",
+    active: true,
     lastAccess: "Hoy, 08:42",
+    roleAssignments: [{ roleId: "administrador", active: true, assignedAt: "2023-02-15" }],
   },
   {
-    id: "emp-2",
-    code: "EMP-002",
-    name: "Carlos Eduardo Méndez",
-    email: "carlos.mendez@origenessv.example",
-    phone: "7123-4589",
-    dui: "02345678-9",
-    position: "Gerente de sucursal",
-    branchId: "santa-tecla",
-    salary: 900,
-    hiredAt: "2023-06-01",
-    active: true,
-    roleAssignments: [{ roleId: "gerente", active: true, assignedAt: "2023-06-01" }],
+    id: "user-2",
+    employeeId: "emp-2",
     username: "carlos.mendez",
+    email: "carlos.mendez@origenessv.example",
+    active: true,
     lastAccess: "Hoy, 08:15",
+    roleAssignments: [{ roleId: "gerente", active: true, assignedAt: "2023-06-01" }],
   },
   {
-    id: "emp-3",
-    code: "EMP-003",
-    name: "Sofía Isabel Castro",
-    email: "sofia.castro@origenessv.example",
-    phone: "7456-2310",
-    dui: "03456789-0",
-    position: "Cajera",
-    branchId: "centro",
-    salary: 550,
-    hiredAt: "2024-01-08",
-    active: true,
-    roleAssignments: [{ roleId: "cajero", active: true, assignedAt: "2024-01-08" }],
+    id: "user-3",
+    employeeId: "emp-3",
     username: "sofia.castro",
+    email: "sofia.castro@origenessv.example",
+    active: true,
     lastAccess: "Ayer, 18:06",
+    roleAssignments: [{ roleId: "cajero", active: true, assignedAt: "2024-01-08" }],
   },
   {
-    id: "emp-4",
-    code: "EMP-004",
-    name: "Luis Alberto Hernández",
-    email: "luis.hernandez@origenessv.example",
-    phone: "7654-9087",
-    dui: "04567890-1",
-    position: "Barista senior",
-    branchId: "centro",
-    salary: 600,
-    hiredAt: "2024-03-18",
-    active: true,
-    roleAssignments: [{ roleId: "barista", active: true, assignedAt: "2024-03-18" }],
+    id: "user-4",
+    employeeId: "emp-4",
     username: "luis.hernandez",
+    email: "luis.hernandez@origenessv.example",
+    active: true,
     lastAccess: "Hoy, 07:58",
+    roleAssignments: [{ roleId: "barista", active: true, assignedAt: "2024-03-18" }],
   },
   {
-    id: "emp-5",
-    code: "EMP-005",
-    name: "Marta Elena Flores",
-    email: "marta.flores@origenessv.example",
-    phone: "7788-1122",
-    dui: "05678901-2",
-    position: "Barista",
-    branchId: "san-miguel",
-    salary: 525,
-    hiredAt: "2024-09-02",
-    active: true,
-    roleAssignments: [
-      { roleId: "barista", active: true, assignedAt: "2024-09-02" },
-      { roleId: "cajero", active: false, assignedAt: "2025-01-15" },
-    ],
+    id: "user-5",
+    employeeId: "emp-5",
     username: "marta.flores",
-    lastAccess: "Ayer, 16:34",
-  },
-  {
-    id: "emp-6",
-    code: "EMP-006",
-    name: "Jorge Antonio Ramírez",
-    email: "jorge.ramirez@origenessv.example",
-    phone: "7012-3344",
-    dui: "06789012-3",
-    position: "Cajero",
-    branchId: "san-miguel",
-    salary: 550,
-    hiredAt: "2025-02-10",
-    active: true,
-    roleAssignments: [{ roleId: "cajero", active: true, assignedAt: "2025-02-10" }],
-    username: "jorge.ramirez",
-    lastAccess: "Hoy, 08:03",
-  },
-  {
-    id: "emp-7",
-    code: "EMP-007",
-    name: "Daniela Beatriz Ortiz",
-    email: "daniela.ortiz@origenessv.example",
-    phone: "7234-5566",
-    dui: "07890123-4",
-    position: "Supervisora temporal",
-    branchId: "santa-tecla",
-    salary: 650,
-    hiredAt: "2025-04-14",
+    email: "marta.flores@origenessv.example",
     active: false,
-    roleAssignments: [{ roleId: "supervisor-temporal", active: false, assignedAt: "2025-04-14" }],
-    username: "daniela.ortiz",
     lastAccess: "12 nov 2026, 17:45",
+    roleAssignments: [{ roleId: "supervisor-temporal", active: false, assignedAt: "2025-04-14" }],
   },
 ];
