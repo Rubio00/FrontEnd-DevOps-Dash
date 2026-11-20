@@ -9,7 +9,7 @@ const nextConfig: NextConfig = {
   partialPrefetching: true,
   async redirects() {
     return [
-      { source: "/", destination: "/admin", permanent: false },
+      { source: "/", destination: "/inicio", permanent: false },
     ];
   },
 };
