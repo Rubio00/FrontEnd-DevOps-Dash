@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import type { FormEvent } from "react";
-import { categories, createEmptyStockLevels } from "./inventory-data";
+import { createEmptyStockLevels } from "./inventory-data";
 import type {
+  Category,
   InventoryItem,
   InventoryItemKind,
   Product,
@@ -25,6 +26,7 @@ export type ProductFormResult = {
 };
 
 type ProductFormModalProps = {
+  categories: Category[];
   items: InventoryItem[];
   suppliers: Supplier[];
   existingNames: string[];
@@ -34,6 +36,7 @@ type ProductFormModalProps = {
 };
 
 export default function ProductFormModal({
+  categories,
   items,
   suppliers,
   existingNames,

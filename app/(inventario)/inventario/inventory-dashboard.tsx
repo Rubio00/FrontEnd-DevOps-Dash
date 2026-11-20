@@ -4,22 +4,25 @@ import { useMemo, useState } from "react";
 import PageHeader from "@/components/PageHeader";
 import {
   branches,
+  categories as initialCategories,
   initialItems,
   initialMovements,
   initialSuppliers,
   products as initialProducts,
 } from "./inventory-data";
+import CategoryManager from "./category-manager";
 import ProductFormModal from "./product-form-modal";
 import type { ProductFormResult } from "./product-form-modal";
 import SupplierManager from "./supplier-manager";
 import type {
+  Category,
   InventoryItemKind,
   StockedInventoryItem,
   Supplier,
   Unit,
 } from "./inventory-data";
 
-type Tab = "existencias" | "productos" | "proveedores" | "movimientos";
+type Tab = "existencias" | "productos" | "categorias" | "proveedores" | "movimientos";
 type StockStatus = "disponible" | "bajo" | "agotado";
 type StatusFilter = "todos" | StockStatus;
 type ItemKindFilter = "todos" | InventoryItemKind;
@@ -144,6 +147,7 @@ function Modal({
 export default function InventoryDashboard() {
   const [items, setItems] = useState(initialItems);
   const [products, setProducts] = useState(initialProducts);
+  const [categories, setCategories] = useState(initialCategories);
   const [suppliers, setSuppliers] = useState(initialSuppliers);
   const [movements] = useState(initialMovements);
   const [branchId, setBranchId] = useState(branches[0].id);
@@ -171,11 +175,6 @@ export default function InventoryDashboard() {
     () => new Map(suppliers.map((supplier) => [supplier.id, supplier])),
     [suppliers],
   );
-  const categories = useMemo(
-    () => [...new Set(items.map((item) => item.category))].sort(),
-    [items],
-  );
-
   const filteredItems = useMemo(() => {
     const query = search.trim().toLocaleLowerCase("es");
     return branchItems.filter((item) => {
@@ -216,6 +215,11 @@ export default function InventoryDashboard() {
         ? `${item.name} se agregó como insumo y no aparecerá en el menú.`
         : `${product?.name ?? item?.name} se agregó correctamente al menú.`,
     });
+  }
+
+  function addCategory(category: Category) {
+    setCategories((current) => [...current, category]);
+    setToast({ type: "success", message: `${category.name} se agregó a las categorías del catálogo.` });
   }
 
   function addSupplier(supplier: Supplier) {
@@ -260,6 +264,7 @@ export default function InventoryDashboard() {
   const tabs: { id: Tab; label: string; icon: IconName; count: number }[] = [
     { id: "existencias", label: "Existencias", icon: "box", count: items.length },
     { id: "productos", label: "Menú y recetas", icon: "recipe", count: products.length },
+    { id: "categorias", label: "Categorías", icon: "recipe", count: categories.length },
     { id: "proveedores", label: "Proveedores", icon: "store", count: suppliers.length },
     { id: "movimientos", label: "Movimientos", icon: "history", count: branchMovements.length },
   ];
@@ -377,7 +382,7 @@ export default function InventoryDashboard() {
                     value={categoryFilter}
                   >
                     <option value="todas">Todas las categorías</option>
-                    {categories.map((category) => <option key={category} value={category}>{category}</option>)}
+                    {categories.map((category) => <option key={category.id} value={category.name}>{category.name}</option>)}
                   </select>
                   <select
                     aria-label="Filtrar por estado"
@@ -535,6 +540,10 @@ export default function InventoryDashboard() {
             </section>
           )}
 
+          {activeTab === "categorias" && (
+            <CategoryManager categories={categories} items={items} onAdd={addCategory} products={products} />
+          )}
+
           {activeTab === "proveedores" && (
             <SupplierManager suppliers={suppliers} items={items} onAdd={addSupplier} onDelete={deleteSupplier} />
           )}
@@ -576,6 +585,7 @@ export default function InventoryDashboard() {
 
         {productFormOpen && (
           <ProductFormModal
+            categories={categories}
             existingNames={[...items.map((item) => item.name), ...products.map((product) => product.name)]}
             existingSkus={[...items.map((item) => item.sku), ...products.map((product) => product.sku ?? product.id)]}
             items={items}
