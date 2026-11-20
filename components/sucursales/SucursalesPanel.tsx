@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Icon } from "@/components/Icon";
-import { crearSucursal } from "@/services/sucursales";
+import { crearSucursal } from "@/services/sucursales.client";
+import { validarSucursal } from "@/lib/validarSucursal";
 import type { DatosSucursal, Sucursal } from "@/types/sucursal";
 import SucursalCard from "./SucursalCard";
 import SucursalFormModal from "./SucursalFormModal";
@@ -25,20 +26,23 @@ export default function SucursalesPanel({ inicial }: { inicial: Sucursal[] }) {
   const visibles = useMemo(() => {
     const texto = busqueda.trim().toLocaleLowerCase("es");
     return sucursales.filter((s) => {
-      const coincideEstado = filtro === "todas" || s.estado === filtro;
+      const coincideEstado = filtro === "todas" || (filtro === "activa" ? s.activa : !s.activa);
       const coincideTexto =
         !texto ||
         s.nombre.toLocaleLowerCase("es").includes(texto) ||
-        s.codigo.toLowerCase().includes(texto) ||
-        s.ciudad.toLocaleLowerCase("es").includes(texto);
+        (s.direccion ?? "").toLocaleLowerCase("es").includes(texto) ||
+        (s.telefono ?? "").includes(texto);
       return coincideEstado && coincideTexto;
     });
   }, [busqueda, filtro, sucursales]);
 
-  const activas = sucursales.filter((s) => s.estado === "activa").length;
+  const activas = sucursales.filter((s) => s.activa).length;
 
-  async function crear(datos: DatosSucursal, inicialFcf: number, inicialCcf: number) {
-    const nueva = await crearSucursal(datos, inicialFcf, inicialCcf, sucursales);
+  async function crear(datos: DatosSucursal) {
+    const error = validarSucursal(datos, sucursales);
+    if (error) throw new Error(error);
+
+    const nueva = await crearSucursal(datos);
     setSucursales((actuales) => [...actuales, nueva]);
     setCreando(false);
     setAviso(`${nueva.nombre} se creó con sus correlativos FCF y CCF.`);

@@ -1,4 +1,5 @@
 import type { Empleado } from "@/types/empleado";
+import { nombreEmpleado } from "@/types/empleado";
 import { usd } from "@/lib/format";
 import { calcularBoleta } from "@/lib/planilla";
 
@@ -20,18 +21,19 @@ function Linea({ etiqueta, valor, negativo }: { etiqueta: string; valor: number;
 }
 
 export default function BoletaEmpleado({ empleado, onCambiarEstado }: Props) {
-  const b = calcularBoleta(empleado.salario);
-  const activo = empleado.estado === "Activo";
+  const b = calcularBoleta(empleado.salarioMensual);
 
   return (
-    <aside className="sticky top-6 rounded-xl border border-stone-200 bg-white p-6 shadow-sm">
-      <p className="text-xs font-medium uppercase tracking-wide text-stone-500">{empleado.id}</p>
-      <h3 className="text-xl font-semibold text-primary">{empleado.nombre}</h3>
+    <aside className="sticky top-6 h-fit rounded-xl border border-stone-200 bg-white p-6 shadow-sm">
+      <p className="text-xs font-medium uppercase tracking-wide text-stone-500">
+        EMP-{String(empleado.id).padStart(3, "0")}
+      </p>
+      <h3 className="text-xl font-semibold text-primary">{nombreEmpleado(empleado)}</h3>
       <p className="text-sm text-stone-500">
-        {empleado.cargo} · {empleado.sucursal}
+        {empleado.puesto} · {empleado.sucursal?.nombre ?? "Sin sucursal"}
       </p>
       <p className="mt-1 text-xs text-stone-400">
-        DUI {empleado.dui} · Ingreso {empleado.fechaIngreso}
+        DUI {empleado.dui || "—"} · Ingreso {empleado.fechaContratacion}
       </p>
 
       <div className="mt-5 rounded-lg bg-page p-4">
@@ -63,12 +65,12 @@ export default function BoletaEmpleado({ empleado, onCambiarEstado }: Props) {
       <button
         onClick={onCambiarEstado}
         className={`mt-6 w-full rounded-full border px-5 py-2 text-sm font-medium transition ${
-          activo
+          empleado.activo
             ? "border-red-300 text-red-700 hover:bg-red-50"
             : "border-emerald-300 text-emerald-700 hover:bg-emerald-50"
         }`}
       >
-        {activo ? "Desactivar empleado" : "Reactivar empleado"}
+        {empleado.activo ? "Desactivar empleado" : "Reactivar empleado"}
       </button>
     </aside>
   );

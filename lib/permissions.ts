@@ -1,23 +1,17 @@
+import { normalizarRol } from "@/types/auth";
 
 export const routePermissions: Record<string, string[]> = {
-    "/inicio": ["admin", "gerente", "cajero", "bodega"],
+    "/inicio": ["admin", "gerente", "cajero", "barista", "compras"],
     "/ventas": ["admin", "gerente", "cajero"],
     "/balance": ["admin", "gerente"],
-    "/inventario": ["admin", "gerente", "bodega"],
-    "/compras": ["admin", "gerente", "bodega"],
-    "/proveedores": ["admin", "gerente"],
+    "/inventario": ["admin", "gerente", "barista", "compras"],
+    "/compras": ["admin", "gerente", "compras"],
+    "/proveedores": ["admin", "gerente", "compras"],
     "/planilla": ["admin", "gerente"],
     "/sucursales": ["admin", "gerente"],
     "/admin": ["admin"],
-    "/perfil": ["admin", "gerente", "cajero", "bodega"],
+    "/perfil": ["admin", "gerente", "cajero", "barista", "compras"],
 };
-
-export function normalizeRole(role: string) {
-    const normalized = role.toLowerCase().trim();
-    return normalized === "administrador"
-        ? "admin"
-        : normalized;
-}
 
 export function canAccess(pathname: string, role: string) {
     const route = Object.keys(routePermissions).find(
@@ -26,5 +20,6 @@ export function canAccess(pathname: string, role: string) {
 
     if (!route) return false;
 
-    return routePermissions[route].includes(normalizeRole(role));
+    return routePermissions[route].includes(normalizarRol(role));
 }
+

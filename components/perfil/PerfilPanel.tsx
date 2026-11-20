@@ -1,60 +1,35 @@
 "use client";
 
-import Link from "next/link";
-import { useEffect, useState } from "react";
-import type { FormEvent } from "react";
-import { sucursales } from "@/data/sucursales";
-import { useSesion } from "@/lib/useSesion";
-import { validarClave, validarContacto } from "@/lib/validarPerfil";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { etiquetasRol } from "@/types/auth";
+import type { UsuarioSesion } from "@/types/auth";
 
-const input =
-  "mt-2 w-full rounded-xl border border-primary/15 bg-white px-3 py-3 text-sm font-normal outline-none placeholder:text-ink/30 focus:border-accent focus:ring-2 focus:ring-accent/20";
+type Props = {
+  usuario: UsuarioSesion;
+  sucursalDireccion: string | null;
+};
 
-export default function PerfilPanel() {
-  const { usuario } = useSesion();
-  const sucursal = sucursales.find((item) => item.id === usuario.sucursalId);
+export default function PerfilPanel({ usuario, sucursalDireccion }: Props) {
+  const router = useRouter();
+  const [saliendo, setSaliendo] = useState(false);
 
-  const [correo, setCorreo] = useState("");
-  const [telefono, setTelefono] = useState("");
-  const [errorContacto, setErrorContacto] = useState("");
-
-  const [actual, setActual] = useState("");
-  const [nueva, setNueva] = useState("");
-  const [confirmacion, setConfirmacion] = useState("");
-  const [errorClave, setErrorClave] = useState("");
-
-  const [aviso, setAviso] = useState("");
-
-  useEffect(() => {
-    if (!aviso) return;
-    const temporizador = setTimeout(() => setAviso(""), 4000);
-    return () => clearTimeout(temporizador);
-  }, [aviso]);
-
-  function guardarContacto(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const error = validarContacto(correo, telefono);
-    setErrorContacto(error ?? "");
-    if (error) return;
-    setAviso("Tus datos de contacto se actualizaron.");
-  }
-
-  function cambiarClave(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const error = validarClave(actual, nueva, confirmacion);
-    setErrorClave(error ?? "");
-    if (error) return;
-    setActual("");
-    setNueva("");
-    setConfirmacion("");
-    setAviso("Tu contraseña se cambió correctamente.");
+  async function cerrarSesion() {
+    setSaliendo(true);
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+    } finally {
+      router.replace("/login");
+      router.refresh();
+    }
   }
 
   const datos: [string, string][] = [
+    ["Correo", usuario.email],
     ["Cargo", usuario.cargo],
     ["Rol", etiquetasRol[usuario.rol]],
-    ["Sucursal", sucursal?.nombre ?? "Sin sucursal"],
+    ["Sucursal", usuario.sucursal ?? "Sin sucursal"],
+    ["Dirección de la sucursal", sucursalDireccion || "—"],
   ];
 
   return (
@@ -62,7 +37,7 @@ export default function PerfilPanel() {
       <div>
         <p className="text-sm font-medium uppercase tracking-widest text-accent">Mi cuenta</p>
         <h2 className="mt-2 text-2xl font-bold">Perfil</h2>
-        <p className="mt-1 text-sm text-muted">Datos de tu sesión, contacto y seguridad.</p>
+        <p className="mt-1 text-sm text-muted">Datos que la API devuelve para tu sesión.</p>
       </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[320px_1fr]">
@@ -79,83 +54,45 @@ export default function PerfilPanel() {
             {datos.map(([etiqueta, valor]) => (
               <div key={etiqueta} className="py-3">
                 <dt className="text-xs font-semibold text-ink/45">{etiqueta}</dt>
-                <dd className="mt-1 text-sm font-medium text-ink">{valor}</dd>
+                <dd className="mt-1 break-words text-sm font-medium text-ink">{valor}</dd>
               </div>
             ))}
           </dl>
 
-          <Link
-            href="/login"
-            className="mt-6 block rounded-xl border border-red-200 px-4 py-2.5 text-sm font-bold text-red-700 transition hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-400"
+          <button
+            type="button"
+            onClick={cerrarSesion}
+            disabled={saliendo}
+            className="mt-6 block w-full rounded-xl border border-red-200 px-4 py-2.5 text-sm font-semibold text-red-700 transition hover:bg-red-50 disabled:opacity-60"
           >
-            Cerrar sesión
-          </Link>
+            {saliendo ? "Cerrando sesión..." : "Cerrar sesión"}
+          </button>
         </section>
 
         <div className="space-y-6">
-          <form className="rounded-2xl border border-primary/10 bg-white p-6 shadow-sm" onSubmit={guardarContacto}>
-            <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-ink/45">Datos de contacto</h3>
-            <div className="mt-4 grid gap-5 sm:grid-cols-2">
-              <label className="block text-sm font-semibold text-primary">
-                Correo electrónico
-                <input className={input} onChange={(e) => setCorreo(e.target.value)} placeholder="nombre@origenes.sv" required type="email" value={correo} />
-              </label>
-              <label className="block text-sm font-semibold text-primary">
-                Teléfono
-                <input className={input} inputMode="tel" onChange={(e) => setTelefono(e.target.value)} placeholder="7777-8888" required type="text" value={telefono} />
-              </label>
-            </div>
-            {errorContacto && (
-              <p className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-800" role="alert">
-                {errorContacto}
-              </p>
-            )}
-            <div className="mt-5 flex justify-end">
-              <button className="rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-white transition hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-accent" type="submit">
-                Guardar contacto
-              </button>
-            </div>
-          </form>
+          <section className="rounded-2xl border border-primary/10 bg-white p-6 shadow-sm">
+            <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-ink/45">Seguridad</h3>
+            <p className="mt-3 text-sm leading-6 text-muted">
+              Tu sesión se mantiene en una cookie <span className="font-semibold text-primary">httpOnly</span>, así que el
+              token no es accesible desde JavaScript. Todas las llamadas al backend pasan por el BFF del frontend.
+            </p>
+            <ul className="mt-4 space-y-2 text-sm text-muted">
+              <li>• El token expira a las 8 horas.</li>
+              <li>• Si el backend responde 401, la cookie se elimina y se te redirige al login.</li>
+              <li>• Los permisos se revalidan en cada petición del API, no solo en el menú.</li>
+            </ul>
+          </section>
 
-          <form className="rounded-2xl border border-primary/10 bg-white p-6 shadow-sm" onSubmit={cambiarClave}>
-            <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-ink/45">Cambiar contraseña</h3>
-            <div className="mt-4 grid gap-5 sm:grid-cols-3">
-              <label className="block text-sm font-semibold text-primary">
-                Contraseña actual
-                <input autoComplete="current-password" className={input} onChange={(e) => setActual(e.target.value)} required type="password" value={actual} />
-              </label>
-              <label className="block text-sm font-semibold text-primary">
-                Nueva contraseña
-                <input autoComplete="new-password" className={input} onChange={(e) => setNueva(e.target.value)} required type="password" value={nueva} />
-              </label>
-              <label className="block text-sm font-semibold text-primary">
-                Confirmar nueva
-                <input autoComplete="new-password" className={input} onChange={(e) => setConfirmacion(e.target.value)} required type="password" value={confirmacion} />
-              </label>
-            </div>
-            <p className="mt-3 text-xs text-muted">Mínimo 8 caracteres, con al menos una letra y un número.</p>
-            {errorClave && (
-              <p className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-800" role="alert">
-                {errorClave}
-              </p>
-            )}
-            <div className="mt-5 flex justify-end">
-              <button className="rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-white transition hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-accent" type="submit">
-                Cambiar contraseña
-              </button>
-            </div>
-          </form>
+          <section className="rounded-2xl border border-amber-200 bg-amber-50 p-6">
+            <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-amber-800">Funciones pendientes en el API</h3>
+            <p className="mt-3 text-sm leading-6 text-amber-900">
+              La edición de contacto y el cambio de contraseña necesitan endpoints propios
+              (<span className="font-mono text-xs">PATCH /api/v1/usuarios/:id</span> requiere rol gerente y no permite
+              autoservicio). Cuando el backend los exponga, este panel se conecta sin cambiar la sesión.
+            </p>
+          </section>
         </div>
       </div>
-
-      {aviso && (
-        <div
-          className="fixed bottom-5 right-5 z-[60] max-w-md rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-4 text-sm font-semibold text-emerald-900 shadow-xl"
-          role="status"
-        >
-          {aviso}
-        </div>
-      )}
     </>
   );
 }

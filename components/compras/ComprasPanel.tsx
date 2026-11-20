@@ -1,23 +1,28 @@
 "use client";
 
 import { useState } from "react";
-import type { Compra } from "@/types/compra";
-import { sucursales } from "@/data/sucursales";
-import { totalCompra } from "@/lib/compras";
+import type { Compra, EstadoCompra, InsumoCompra } from "@/types/compra";
 import { usd } from "@/lib/format";
-import { crearCompra } from "@/services/compras";
+import { crearCompra } from "@/services/compras.client";
 import KpiCard from "@/components/KpiCard";
 import CompraCard from "./CompraCard";
 import NuevaCompraModal from "./NuevaCompraModal";
 
-const estados = ["Todos", "Borrador", "Por pagar", "Pagada"] as const;
+const estados: ("Todos" | EstadoCompra)[] = ["Todos", "Por pagar", "Pagada"];
 
-export default function ComprasPanel({ iniciales }: { iniciales: Compra[] }) {
+type Props = {
+  iniciales: Compra[];
+  sucursales: { id: number; nombre: string }[];
+  proveedores: { id: number; nombre: string }[];
+  catalogo: InsumoCompra[];
+};
+
+export default function ComprasPanel({ iniciales, sucursales, proveedores, catalogo }: Props) {
   const [compras, setCompras] = useState(iniciales);
   const [modal, setModal] = useState(false);
   const [busqueda, setBusqueda] = useState("");
   const [estado, setEstado] = useState<(typeof estados)[number]>("Todos");
-  const [sucursal, setSucursal] = useState("Todas");
+  const [sucursalId, setSucursalId] = useState("todas");
 
   const texto = busqueda.trim().toLowerCase();
   const visibles = compras.filter((c) => {
@@ -26,24 +31,19 @@ export default function ComprasPanel({ iniciales }: { iniciales: Compra[] }) {
       .toLowerCase();
     return (
       (estado === "Todos" || c.estado === estado) &&
-      (sucursal === "Todas" || c.sucursal === sucursal) &&
+      (sucursalId === "todas" || c.sucursalId === Number(sucursalId)) &&
       contenido.includes(texto)
     );
   });
 
   const porPagar = compras.filter((c) => c.estado === "Por pagar");
-  const borradores = compras.filter((c) => c.estado === "Borrador");
-
-  const ultimo = compras.reduce((max, c) => Math.max(max, Number(c.ref.slice(3)) || 0), 0);
-  const siguienteRef = `FC-${String(ultimo + 1).padStart(4, "0")}`;
-  const proveedores = [...new Set(compras.map((c) => c.proveedor))];
 
   return (
     <div className="space-y-6">
-      <section className="grid grid-cols-2 gap-4 md:grid-cols-4">
-        <KpiCard texto="Borradores" valor={borradores.length} />
+      <section className="grid grid-cols-2 gap-4 md:grid-cols-3">
+        <KpiCard texto="Facturas registradas" valor={compras.length} />
         <KpiCard texto="Facturas por pagar" valor={porPagar.length} />
-        <KpiCard texto="Cuentas por pagar" valor={usd(porPagar.reduce((s, c) => s + totalCompra(c), 0))} />
+        <KpiCard texto="Cuentas por pagar" valor={usd(porPagar.reduce((s, c) => s + c.total, 0))} />
       </section>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -55,13 +55,13 @@ export default function ComprasPanel({ iniciales }: { iniciales: Compra[] }) {
             className="w-full max-w-sm rounded-lg border border-stone-300 bg-white px-4 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/30"
           />
           <select
-            value={sucursal}
-            onChange={(e) => setSucursal(e.target.value)}
+            value={sucursalId}
+            onChange={(e) => setSucursalId(e.target.value)}
             className="rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm outline-none focus:border-accent"
           >
-            <option value="Todas">Todas las sucursales</option>
+            <option value="todas">Todas las sucursales</option>
             {sucursales.map((s) => (
-              <option key={s.id} value={s.nombre}>
+              <option key={s.id} value={s.id}>
                 {s.nombre}
               </option>
             ))}
@@ -69,7 +69,8 @@ export default function ComprasPanel({ iniciales }: { iniciales: Compra[] }) {
         </div>
         <button
           onClick={() => setModal(true)}
-          className="rounded-lg bg-accent px-5 py-2 text-sm font-medium text-white shadow-sm transition hover:brightness-110"
+          disabled={proveedores.length === 0 || catalogo.length === 0}
+          className="rounded-lg bg-accent px-5 py-2 text-sm font-medium text-white shadow-sm transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
         >
           + Nueva compra
         </button>
@@ -104,19 +105,21 @@ export default function ComprasPanel({ iniciales }: { iniciales: Compra[] }) {
       ) : (
         <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {visibles.map((c) => (
-            <CompraCard key={c.ref} compra={c} />
+            <CompraCard key={c.id} compra={c} />
           ))}
         </section>
       )}
 
       {modal && (
         <NuevaCompraModal
-          siguienteRef={siguienteRef}
+          catalogo={catalogo}
           proveedores={proveedores}
+          sucursales={sucursales}
           onCerrar={() => setModal(false)}
-          onGuardar={async (c) => {
-            const nueva = await crearCompra(c);
+          onGuardar={async (datos) => {
+            const nueva = await crearCompra(datos);
             setCompras((prev) => [nueva, ...prev]);
+            setModal(false);
           }}
         />
       )}

@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { documentos, documentosEmitidos, numeroDocumento } from "@/lib/correlativos";
-import { actualizarSucursal, getSucursales } from "@/services/sucursales";
+import { documentos, documentosEmitidos, numeroDocumento, serieDe, siguienteNumero } from "@/lib/correlativos";
+import { actualizarSucursal } from "@/services/sucursales.client";
 import type { DatosSucursal, Sucursal } from "@/types/sucursal";
 import SucursalFormModal from "./SucursalFormModal";
 
@@ -19,20 +19,17 @@ export default function SucursalDetalle({ inicial }: { inicial: Sucursal }) {
   }, [aviso]);
 
   async function guardar(datos: DatosSucursal) {
-    const existentes = await getSucursales();
-    const actualizada = await actualizarSucursal(sucursal, datos, existentes);
+    const actualizada = await actualizarSucursal(sucursal.id, datos);
     setSucursal(actualizada);
     setEditando(false);
     setAviso("Los datos de la sucursal se actualizaron.");
   }
 
-  const activa = sucursal.estado === "activa";
   const datos: [string, string][] = [
-    ["Código", sucursal.codigo],
-    ["Dirección", sucursal.direccion],
-    ["Ciudad", sucursal.ciudad],
-    ["Teléfono", sucursal.telefono],
-    ["Encargado", sucursal.encargado],
+    ["Código", `SUC-${String(sucursal.id).padStart(3, "0")}`],
+    ["Dirección", sucursal.direccion || "—"],
+    ["Teléfono", sucursal.telefono || "—"],
+    ["Estado", sucursal.activa ? "Activa" : "Inactiva"],
   ];
 
   return (
@@ -46,10 +43,10 @@ export default function SucursalDetalle({ inicial }: { inicial: Sucursal }) {
           <h2 className="text-2xl font-bold text-primary">{sucursal.nombre}</h2>
           <span
             className={`rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide ${
-              activa ? "bg-emerald-50 text-emerald-700" : "bg-stone-100 text-stone-500"
+              sucursal.activa ? "bg-emerald-50 text-emerald-700" : "bg-stone-100 text-stone-500"
             }`}
           >
-            {activa ? "Activa" : "Inactiva"}
+            {sucursal.activa ? "Activa" : "Inactiva"}
           </span>
         </div>
         <button
@@ -77,23 +74,20 @@ export default function SucursalDetalle({ inicial }: { inicial: Sucursal }) {
         <section className="rounded-2xl border border-primary/10 bg-white p-6 shadow-sm">
           <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-ink/45">Correlativos de facturación</h3>
           <div className="mt-4 grid gap-4 md:grid-cols-2">
-            {documentos.map((doc) => {
-              const correlativo = doc.tipo === "FCF" ? sucursal.fcf : sucursal.ccf;
-              return (
-                <article key={doc.tipo} className="rounded-xl bg-page p-5">
-                  <p className="text-sm font-bold text-primary">{doc.tipo} · {doc.nombre}</p>
-                  <p className="mt-1 text-xs text-muted">{doc.detalle}</p>
-                  <p className="mt-4 text-[11px] font-bold uppercase tracking-wider text-ink/40">Próximo número</p>
-                  <p className="mt-1 font-mono text-lg font-bold text-primary">
-                    {numeroDocumento(doc.tipo, sucursal.codigo, correlativo.siguiente)}
-                  </p>
-                  <div className="mt-4 flex justify-between border-t border-primary/10 pt-3 text-xs text-ink/55">
-                    <span>Inicio: {correlativo.inicial.toLocaleString("es-SV")}</span>
-                    <span>Emitidos: {documentosEmitidos(correlativo).toLocaleString("es-SV")}</span>
-                  </div>
-                </article>
-              );
-            })}
+            {documentos.map((doc) => (
+              <article key={doc.tipo} className="rounded-xl bg-page p-5">
+                <p className="text-sm font-bold text-primary">{doc.tipo} · {doc.nombre}</p>
+                <p className="mt-1 text-xs text-muted">{doc.detalle}</p>
+                <p className="mt-4 text-[11px] font-bold uppercase tracking-wider text-ink/40">Próximo número</p>
+                <p className="mt-1 font-mono text-lg font-bold text-primary">
+                  {numeroDocumento(doc.tipo, serieDe(sucursal, doc.tipo), siguienteNumero(sucursal, doc.tipo))}
+                </p>
+                <div className="mt-4 flex justify-between border-t border-primary/10 pt-3 text-xs text-ink/55">
+                  <span>Serie: {serieDe(sucursal, doc.tipo)}</span>
+                  <span>Emitidos: {documentosEmitidos(sucursal, doc.tipo).toLocaleString("es-SV")}</span>
+                </div>
+              </article>
+            ))}
           </div>
           <p className="mt-4 text-xs leading-5 text-muted">
             Los correlativos avanzan automáticamente al emitir documentos desde Ventas y no se editan manualmente.

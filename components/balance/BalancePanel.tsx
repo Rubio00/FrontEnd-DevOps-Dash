@@ -60,7 +60,7 @@ export default function BalancePanel({ ventas, sucursales }: Props) {
         <div>
           <p className="text-sm font-medium uppercase tracking-widest text-accent">Resultados</p>
           <h2 className="mt-2 text-2xl font-bold">Balance de ventas</h2>
-          <p className="mt-1 text-sm text-muted">Datos simulados al {formatearFecha(FECHA_REFERENCIA)}.</p>
+          <p className="mt-1 text-sm text-muted">Ventas registradas al {formatearFecha(FECHA_REFERENCIA)}.</p>
         </div>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <div className="flex gap-2">

@@ -2,7 +2,7 @@ import type { Modulo } from "@/types/menu";
 
 /**
  * Definición del menú principal. Cada módulo declara los roles que pueden
- * verlo; el filtrado real vive en `lib/auth.ts`.
+ * verlo; el filtrado real vive en `lib/permissions.ts`.
  */
 export const modulos: Modulo[] = [
   {
@@ -12,7 +12,7 @@ export const modulos: Modulo[] = [
     href: "/inicio",
     etiqueta: "Panel",
     icono: "inicio",
-    roles: ["administrador", "gerente", "cajero", "bodega"],
+    roles: ["admin", "gerente", "cajero", "barista", "compras"],
   },
   {
     id: "ventas",
@@ -21,7 +21,7 @@ export const modulos: Modulo[] = [
     href: "/ventas",
     etiqueta: "POS",
     icono: "ventas",
-    roles: ["administrador", "gerente", "cajero"],
+    roles: ["admin", "gerente", "cajero"],
   },
   {
     id: "inventario",
@@ -30,7 +30,7 @@ export const modulos: Modulo[] = [
     href: "/inventario",
     etiqueta: "Stock",
     icono: "inventario",
-    roles: ["administrador", "gerente", "bodega"],
+    roles: ["admin", "gerente", "barista", "compras"],
   },
   {
     id: "compras",
@@ -39,7 +39,7 @@ export const modulos: Modulo[] = [
     href: "/compras",
     etiqueta: "Compras",
     icono: "compras",
-    roles: ["administrador", "gerente", "bodega"],
+    roles: ["admin", "gerente", "compras"],
   },
   {
     id: "admin",
@@ -48,6 +48,7 @@ export const modulos: Modulo[] = [
     href: "/admin",
     etiqueta: "Sistema",
     icono: "admin",
-    roles: ["administrador"],
+    roles: ["admin"],
   },
 ];
+

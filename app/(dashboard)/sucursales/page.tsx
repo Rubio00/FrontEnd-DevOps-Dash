@@ -2,6 +2,8 @@ import PageHeader from "@/components/PageHeader";
 import SucursalesPanel from "@/components/sucursales/SucursalesPanel";
 import { getSucursales } from "@/services/sucursales";
 
+export const dynamic = "force-dynamic";
+
 export default async function SucursalesPage() {
   const sucursales = await getSucursales();
 

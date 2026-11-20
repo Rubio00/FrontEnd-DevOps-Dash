@@ -1,22 +1,29 @@
-export type EstadoSucursal = "activa" | "inactiva";
+/**
+ * Tipos alineados 1:1 con el recurso `sucursal` del backend.
+ */
+
+export type TipoDocumento = "FCF" | "CCF";
 
 export type Correlativo = {
-  inicial: number;
-  siguiente: number;
+  id: number;
+  tipoDoc: TipoDocumento;
+  serie: string;
+  ultimoNumero: number;
 };
 
+export type Sucursal = {
+  id: number;
+  nombre: string;
+  direccion: string | null;
+  telefono: string | null;
+  activa: boolean;
+  correlativos?: Correlativo[];
+};
+
+/** Cuerpo aceptado por POST/PATCH /api/v1/sucursal */
 export type DatosSucursal = {
   nombre: string;
-  codigo: string;
   direccion: string;
-  ciudad: string;
   telefono: string;
-  encargado: string;
-  estado: EstadoSucursal;
-};
-
-export type Sucursal = DatosSucursal & {
-  id: string;
-  fcf: Correlativo;
-  ccf: Correlativo;
+  activa: boolean;
 };

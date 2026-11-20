@@ -1,19 +1,19 @@
 import { redirect } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
-import { getSessionUser } from "@/lib/session";
+import { requireSessionUser } from "@/lib/session";
+import { normalizarRol } from "@/types/auth";
 
 export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const user = await getSessionUser();
-
-  if (!user) redirect("/login");
+  const user = await requireSessionUser();
+  const rol = normalizarRol(user.rol?.nombre);
 
   return (
     <div className="min-h-screen bg-page text-ink">
-      <Sidebar role={user.rol?.nombre ?? ""} />
+      <Sidebar role={rol} />
 
       <div className="min-w-0 lg:ml-64">
         {children}

@@ -2,13 +2,12 @@
 
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
-import { documentos, numeroDocumento } from "@/lib/correlativos";
-import type { DatosSucursal, EstadoSucursal, Sucursal } from "@/types/sucursal";
+import type { DatosSucursal, Sucursal } from "@/types/sucursal";
 
 type Props = {
   sucursal?: Sucursal;
   onClose: () => void;
-  onGuardar: (datos: DatosSucursal, inicialFcf: number, inicialCcf: number) => Promise<void>;
+  onGuardar: (datos: DatosSucursal) => Promise<void>;
 };
 
 const input =
@@ -17,14 +16,9 @@ const input =
 export default function SucursalFormModal({ sucursal, onClose, onGuardar }: Props) {
   const editando = Boolean(sucursal);
   const [nombre, setNombre] = useState(sucursal?.nombre ?? "");
-  const [codigo, setCodigo] = useState(sucursal?.codigo ?? "");
   const [direccion, setDireccion] = useState(sucursal?.direccion ?? "");
-  const [ciudad, setCiudad] = useState(sucursal?.ciudad ?? "");
   const [telefono, setTelefono] = useState(sucursal?.telefono ?? "");
-  const [encargado, setEncargado] = useState(sucursal?.encargado ?? "");
-  const [estado, setEstado] = useState<EstadoSucursal>(sucursal?.estado ?? "activa");
-  const [inicialFcf, setInicialFcf] = useState("1");
-  const [inicialCcf, setInicialCcf] = useState("1");
+  const [activa, setActiva] = useState(sucursal?.activa ?? true);
   const [error, setError] = useState("");
   const [guardando, setGuardando] = useState(false);
 
@@ -41,19 +35,17 @@ export default function SucursalFormModal({ sucursal, onClose, onGuardar }: Prop
     setError("");
     setGuardando(true);
     try {
-      await onGuardar(
-        { nombre, codigo, direccion, ciudad, telefono, encargado, estado },
-        Number(inicialFcf),
-        Number(inicialCcf),
-      );
+      await onGuardar({
+        nombre: nombre.trim(),
+        direccion: direccion.trim(),
+        telefono: telefono.trim(),
+        activa,
+      });
     } catch (e) {
       setError(e instanceof Error ? e.message : "No se pudo guardar la sucursal.");
       setGuardando(false);
     }
   }
-
-  const iniciales = { FCF: inicialFcf, CCF: inicialCcf } as const;
-  const cambiarInicial = { FCF: setInicialFcf, CCF: setInicialCcf } as const;
 
   return (
     <div
@@ -74,8 +66,8 @@ export default function SucursalFormModal({ sucursal, onClose, onGuardar }: Prop
             </h2>
             <p className="mt-1 text-sm text-muted">
               {editando
-                ? "El código y los correlativos no se pueden modificar."
-                : "Al crearla se generan sus correlativos base de FCF y CCF."}
+                ? "Los correlativos no se modifican desde aquí."
+                : "El backend genera automáticamente los correlativos FCF y CCF."}
             </p>
           </div>
           <button
@@ -90,75 +82,48 @@ export default function SucursalFormModal({ sucursal, onClose, onGuardar }: Prop
 
         <form className="space-y-5 p-6" onSubmit={handleSubmit}>
           <div className="grid gap-5 sm:grid-cols-2">
-            <label className="block text-sm font-semibold text-primary">
+            <label className="block text-sm font-semibold text-primary sm:col-span-2">
               Nombre
-              <input autoFocus className={input} onChange={(e) => setNombre(e.target.value)} placeholder="Ej. Santa Ana" required type="text" value={nombre} />
-            </label>
-            <label className="block text-sm font-semibold text-primary">
-              Código
               <input
-                className={`${input} font-mono uppercase`}
-                disabled={editando}
-                maxLength={6}
-                onChange={(e) => setCodigo(e.target.value.replace(/[^a-zA-Z0-9]/g, "").toUpperCase())}
-                placeholder="Ej. SAN"
+                autoFocus
+                className={input}
+                minLength={3}
+                onChange={(e) => setNombre(e.target.value)}
+                placeholder="Ej. Orígenes Santa Ana"
                 required
                 type="text"
-                value={codigo}
+                value={nombre}
               />
             </label>
             <label className="block text-sm font-semibold text-primary sm:col-span-2">
               Dirección
-              <input className={input} onChange={(e) => setDireccion(e.target.value)} placeholder="Calle, número y referencia" required type="text" value={direccion} />
-            </label>
-            <label className="block text-sm font-semibold text-primary">
-              Ciudad
-              <input className={input} onChange={(e) => setCiudad(e.target.value)} placeholder="Ej. Santa Ana" required type="text" value={ciudad} />
+              <input
+                className={input}
+                onChange={(e) => setDireccion(e.target.value)}
+                placeholder="Calle, número y referencia"
+                type="text"
+                value={direccion}
+              />
             </label>
             <label className="block text-sm font-semibold text-primary">
               Teléfono
-              <input className={input} inputMode="tel" onChange={(e) => setTelefono(e.target.value)} placeholder="2222-3333" required type="text" value={telefono} />
-            </label>
-            <label className="block text-sm font-semibold text-primary">
-              Encargado
-              <input className={input} onChange={(e) => setEncargado(e.target.value)} placeholder="Nombre completo" required type="text" value={encargado} />
+              <input
+                className={input}
+                inputMode="tel"
+                onChange={(e) => setTelefono(e.target.value)}
+                placeholder="2222-3333"
+                type="text"
+                value={telefono}
+              />
             </label>
             <label className="block text-sm font-semibold text-primary">
               Estado
-              <select className={input} onChange={(e) => setEstado(e.target.value as EstadoSucursal)} value={estado}>
+              <select className={input} onChange={(e) => setActiva(e.target.value === "activa")} value={activa ? "activa" : "inactiva"}>
                 <option value="activa">Activa</option>
                 <option value="inactiva">Inactiva</option>
               </select>
             </label>
           </div>
-
-          {!editando && (
-            <fieldset className="rounded-2xl border border-primary/10 p-4">
-              <legend className="px-2 text-sm font-bold text-primary">Correlativos base</legend>
-              <p className="mb-4 text-xs leading-5 text-muted">
-                Número desde el que empieza a numerarse cada documento. Por defecto es 1.
-              </p>
-              <div className="grid gap-4 sm:grid-cols-2">
-                {documentos.map((doc) => (
-                  <label key={doc.tipo} className="block text-xs font-semibold text-primary">
-                    {doc.tipo} · {doc.nombre}
-                    <input
-                      className={input}
-                      min="1"
-                      onChange={(e) => cambiarInicial[doc.tipo](e.target.value)}
-                      required
-                      step="1"
-                      type="number"
-                      value={iniciales[doc.tipo]}
-                    />
-                    <span className="mt-2 block font-mono text-[11px] font-normal text-ink/50">
-                      {numeroDocumento(doc.tipo, codigo || "COD", Number(iniciales[doc.tipo]) || 1)}
-                    </span>
-                  </label>
-                ))}
-              </div>
-            </fieldset>
-          )}
 
           {error && (
             <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-800" role="alert">

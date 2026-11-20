@@ -1,6 +1,5 @@
 import type { Compra } from "@/types/compra";
 import { usd } from "@/lib/format";
-import { totalCompra } from "@/lib/compras";
 import EstadoBadge from "@/components/EstadoBadge";
 
 export default function CompraCard({ compra }: { compra: Compra }) {
@@ -11,7 +10,7 @@ export default function CompraCard({ compra }: { compra: Compra }) {
     <article className="rounded-xl border border-stone-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
       <div className="flex items-start justify-between">
         <div>
-          <p className="text-xs font-medium uppercase tracking-wide text-stone-500">Referencia</p>
+          <p className="text-xs font-medium uppercase tracking-wide text-stone-500">Factura</p>
           <p className="font-semibold text-primary">{compra.ref}</p>
         </div>
         <EstadoBadge estado={compra.estado} />
@@ -34,7 +33,7 @@ export default function CompraCard({ compra }: { compra: Compra }) {
 
       <div className="mt-4 flex items-end justify-between border-t border-stone-100 pt-4">
         <span className="text-xs uppercase tracking-wide text-stone-500">Total con IVA</span>
-        <span className="text-2xl font-bold text-primary">{usd(totalCompra(compra))}</span>
+        <span className="text-2xl font-bold text-primary">{usd(compra.total)}</span>
       </div>
     </article>
   );

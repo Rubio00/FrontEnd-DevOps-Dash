@@ -1,4 +1,5 @@
 import type { Proveedor } from "@/types/proveedor";
+import { etiquetaCondicion } from "@/types/proveedor";
 import { usd } from "@/lib/format";
 
 export default function ProveedorFila({ proveedor, saldo }: { proveedor: Proveedor; saldo: number }) {
@@ -6,12 +7,12 @@ export default function ProveedorFila({ proveedor, saldo }: { proveedor: Proveed
     <tr className="border-t border-stone-100 transition hover:bg-accent/5">
       <td className="px-5 py-4">
         <p className="font-semibold text-primary">{proveedor.nombre}</p>
-        <p className="text-xs text-stone-400">{proveedor.id}</p>
+        <p className="text-xs text-stone-400">PRV-{String(proveedor.id).padStart(3, "0")}</p>
       </td>
       <td className="px-5 py-4 text-sm">
-        <p>{proveedor.contacto || "—"}</p>
+        <p>{proveedor.direccion || "—"}</p>
         <p className="text-xs text-stone-500">
-          {proveedor.telefono || "—"} · {proveedor.correo || "—"}
+          {proveedor.telefono || "—"} · {proveedor.email || "—"}
         </p>
       </td>
       <td className="px-5 py-4 text-sm">
@@ -20,7 +21,7 @@ export default function ProveedorFila({ proveedor, saldo }: { proveedor: Proveed
       </td>
       <td className="px-5 py-4">
         <span className="rounded-full border border-accent/40 px-3 py-1 text-xs font-medium text-primary">
-          {proveedor.condicionPago}
+          {etiquetaCondicion(proveedor.diasCredito)}
         </span>
       </td>
       <td

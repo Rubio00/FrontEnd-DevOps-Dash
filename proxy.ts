@@ -14,7 +14,7 @@ export async function proxy(request: NextRequest) {
     }
 
     try {
-        const apiUrl = "http://localhost:3000";
+        const apiUrl = process.env.API_URL ?? "http://localhost:3000";
 
         if (!apiUrl) {
             return new NextResponse("API no configurada", {

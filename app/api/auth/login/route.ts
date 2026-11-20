@@ -1,6 +1,13 @@
-
 import { NextRequest, NextResponse } from "next/server";
-import { apiFetch } from "@/lib/api";
+
+import { ApiError, apiJson } from "@/lib/api";
+import { COOKIE_SESION } from "@/lib/session";
+
+type RespuestaLogin = {
+    message?: string;
+    token?: string;
+    user?: unknown;
+};
 
 export async function POST(request: NextRequest) {
     try {
@@ -18,22 +25,10 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        const response = await apiFetch("/api/v1/auth/login", {
+        const data = await apiJson<RespuestaLogin>("/api/v1/auth/login", {
             method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ email, password }),
+            body: { email: email.trim().toLowerCase(), password },
         });
-
-        if (!response.ok) {
-            return NextResponse.json(
-                { message: "No se pudo iniciar sesión" },
-                { status: response.status }
-            );
-        }
-
-        const data = await response.json();
 
         if (typeof data.token !== "string") {
             return NextResponse.json(
@@ -43,11 +38,11 @@ export async function POST(request: NextRequest) {
         }
 
         const result = NextResponse.json({
-            message: data.message,
+            message: data.message ?? "Inicio de sesión exitoso",
             user: data.user,
         });
 
-        result.cookies.set("session", data.token, {
+        result.cookies.set(COOKIE_SESION, data.token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === "production",
             sameSite: "lax",
@@ -56,10 +51,14 @@ export async function POST(request: NextRequest) {
         });
 
         return result;
-    } catch {
+    } catch (error) {
+        if (error instanceof ApiError) {
+            return NextResponse.json({ message: error.message }, { status: error.status });
+        }
         return NextResponse.json(
             { message: "Error de conexión con el servidor" },
             { status: 502 }
         );
     }
 }
+

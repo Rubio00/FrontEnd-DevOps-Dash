@@ -1,20 +1,21 @@
-import type { Empleado, EstadoEmpleado } from "@/types/empleado";
+import type { Empleado } from "@/types/empleado";
+import { nombreEmpleado } from "@/types/empleado";
 
 type Props = {
   empleado: Empleado;
   onCerrar: () => void;
-  onCambiar: (nuevo: EstadoEmpleado) => void;
+  onCambiar: (activo: boolean) => Promise<void> | void;
 };
 
 export default function EstadoEmpleadoModal({ empleado, onCerrar, onCambiar }: Props) {
-  const activo = empleado.estado === "Activo";
-  const iniciales = empleado.nombre
+  const activo = empleado.activo;
+  const iniciales = nombreEmpleado(empleado)
     .split(" ")
     .slice(0, 2)
     .map((p) => p[0])
     .join("")
     .toUpperCase();
-  const ingreso = new Date(`${empleado.fechaIngreso}T00:00:00`).toLocaleDateString("es-SV", {
+  const ingreso = new Date(`${empleado.fechaContratacion}T00:00:00`).toLocaleDateString("es-SV", {
     day: "numeric",
     month: "short",
     year: "numeric",
@@ -25,7 +26,7 @@ export default function EstadoEmpleadoModal({ empleado, onCerrar, onCambiar }: P
       <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h2 className="text-xl font-semibold text-primary">Estado de {empleado.nombre}</h2>
+            <h2 className="text-xl font-semibold text-primary">Estado de {nombreEmpleado(empleado)}</h2>
             <p className="mt-1 text-sm text-stone-500">
               Activa o desactiva al empleado sin eliminar su historial.
             </p>
@@ -45,9 +46,9 @@ export default function EstadoEmpleadoModal({ empleado, onCerrar, onCambiar }: P
               {iniciales}
             </div>
             <div>
-              <p className="font-semibold text-primary">{empleado.cargo}</p>
+              <p className="font-semibold text-primary">{empleado.puesto}</p>
               <p className="text-xs text-stone-500">
-                {empleado.id} · {empleado.sucursal}
+                EMP-{String(empleado.id).padStart(3, "0")} · {empleado.sucursal?.nombre ?? "Sin sucursal"}
               </p>
             </div>
           </div>
@@ -88,7 +89,7 @@ export default function EstadoEmpleadoModal({ empleado, onCerrar, onCambiar }: P
             </div>
           </div>
           <button
-            onClick={() => onCambiar(activo ? "Inactivo" : "Activo")}
+            onClick={() => onCambiar(!activo)}
             className={`shrink-0 rounded-full border px-4 py-1.5 text-sm font-medium transition ${
               activo
                 ? "border-red-300 text-red-700 hover:bg-red-50"

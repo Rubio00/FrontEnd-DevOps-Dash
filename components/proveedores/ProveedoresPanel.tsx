@@ -1,15 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import type { Proveedor } from "@/types/proveedor";
+import type { DatosProveedor, Proveedor } from "@/types/proveedor";
 import { usd } from "@/lib/format";
-import { crearProveedor } from "@/services/proveedores";
+import { crearProveedor } from "@/services/proveedores.client";
 import ProveedorFila from "./ProveedorFila";
 import NuevoProveedorModal from "./NuevoProveedorModal";
 
 type Props = {
   iniciales: Proveedor[];
-  saldos: Record<string, number>;
+  saldos: Record<number, number>;
 };
 
 type Filtro = "Todos" | "Con saldo" | "Al día";
@@ -21,11 +21,15 @@ export default function ProveedoresPanel({ iniciales, saldos }: Props) {
   const [busqueda, setBusqueda] = useState("");
   const [filtro, setFiltro] = useState<Filtro>("Todos");
 
-  const saldoDe = (p: Proveedor) => saldos[p.nombre] ?? 0;
+  const saldoDe = (p: Proveedor) => saldos[p.id] ?? 0;
 
   const texto = busqueda.trim().toLowerCase();
   const visibles = proveedores.filter((p) => {
-    const coincide = [p.nombre, p.contacto, p.nit, p.nrc].join(" ").toLowerCase().includes(texto);
+    const coincide = [p.nombre, p.nit, p.nrc, p.email, p.direccion]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase()
+      .includes(texto);
     const s = saldoDe(p);
     const pasaFiltro = filtro === "Todos" || (filtro === "Con saldo" ? s > 0 : s === 0);
     return coincide && pasaFiltro;
@@ -33,9 +37,6 @@ export default function ProveedoresPanel({ iniciales, saldos }: Props) {
 
   const conSaldo = proveedores.filter((p) => saldoDe(p) > 0).length;
   const totalPorPagar = proveedores.reduce((s, p) => s + saldoDe(p), 0);
-
-  const ultimo = proveedores.reduce((max, p) => Math.max(max, Number(p.id.slice(4)) || 0), 0);
-  const siguienteId = `PRV-${String(ultimo + 1).padStart(3, "0")}`;
 
   const resumen = [
     { etiqueta: "Registrados", valor: String(proveedores.length) },
@@ -45,7 +46,6 @@ export default function ProveedoresPanel({ iniciales, saldos }: Props) {
 
   return (
     <div className="space-y-6">
-      {/* Franja de resumen (una sola barra, no 3 cards) */}
       <section className="flex flex-col divide-y divide-stone-200 rounded-xl bg-primary text-white shadow-sm sm:flex-row sm:divide-x sm:divide-y-0">
         {resumen.map((r) => (
           <div key={r.etiqueta} className="flex-1 px-6 py-4">
@@ -55,12 +55,11 @@ export default function ProveedoresPanel({ iniciales, saldos }: Props) {
         ))}
       </section>
 
-      {/* Barra de herramientas */}
       <div className="flex flex-wrap items-center gap-3">
         <input
           value={busqueda}
           onChange={(e) => setBusqueda(e.target.value)}
-          placeholder="Buscar por nombre, contacto, NIT o NRC..."
+          placeholder="Buscar por nombre, NIT, NRC o correo..."
           className="w-full max-w-sm rounded-full border border-stone-300 bg-white px-5 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/30"
         />
         <div className="flex gap-2">
@@ -86,7 +85,6 @@ export default function ProveedoresPanel({ iniciales, saldos }: Props) {
         </button>
       </div>
 
-      {/* Directorio en tabla */}
       <div className="overflow-x-auto rounded-xl border border-stone-200 bg-white shadow-sm">
         <table className="w-full min-w-[720px] text-left">
           <thead className="bg-page text-xs uppercase tracking-wider text-stone-500">
@@ -111,12 +109,12 @@ export default function ProveedoresPanel({ iniciales, saldos }: Props) {
 
       {modal && (
         <NuevoProveedorModal
-          siguienteId={siguienteId}
           existentes={proveedores.map((p) => p.nombre)}
           onCerrar={() => setModal(false)}
-          onGuardar={async (p) => {
-            const nuevo = await crearProveedor(p);
+          onGuardar={async (datos: DatosProveedor) => {
+            const nuevo = await crearProveedor(datos);
             setProveedores((prev) => [nuevo, ...prev]);
+            setModal(false);
           }}
         />
       )}
