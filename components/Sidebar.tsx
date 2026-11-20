@@ -17,6 +17,7 @@ const items: Item[] = [
   { href: "/planilla", label: "Planilla", icon: "payroll" },
   { href: "/sucursales", label: "Sucursales", icon: "branch" }, // descomentar cuando se una la rama de sucursales
   { href: "/admin", label: "Administración", icon: "users" },
+    { href: "/perfil", label: "Perfil", icon: "user" },
 ];
 
 export default function Sidebar() {

@@ -15,6 +15,7 @@ export type IconName =
   | "search"
   | "store"
   | "truck"
+  | "user"
   | "users"
   | "wallet";
 
@@ -35,6 +36,7 @@ const iconPaths: Record<IconName, string> = {
   search: "M21 21l-4.35-4.35 M19 11a8 8 0 1 1-16 0 8 8 0 0 1 16 0Z",
   store: "M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z M9 22V12h6v10",
   truck: "M1 3h15v13H1z M16 8h4l3 3v5h-7z M8 18.5a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0Z M21 18.5a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0Z",
+  user: "M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2 M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z",
   users: "M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2 M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z M23 21v-2a4 4 0 0 0-3-3.87 M16 3.13a4 4 0 0 1 0 7.75",
   wallet: "M3 6h16a2 2 0 0 1 2 2v11H3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14 M16 12h5",
 };
