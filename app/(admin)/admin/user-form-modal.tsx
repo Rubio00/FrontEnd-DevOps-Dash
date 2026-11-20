@@ -19,8 +19,9 @@ export default function UserFormModal({
   onSave: (user: UserInput) => void;
 }) {
   const availableRoles = roles.filter((role) => role.active);
-  const [employeeId, setEmployeeId] = useState(employees[0]?.id ?? "");
+  const [employeeId, setEmployeeId] = useState("");
   const [employeeSearch, setEmployeeSearch] = useState("");
+  const [employeeListOpen, setEmployeeListOpen] = useState(false);
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [selectedRoleIds, setSelectedRoleIds] = useState<string[]>([]);
@@ -72,34 +73,68 @@ export default function UserFormModal({
 
   const normalizedEmployeeSearch = employeeSearch.trim().toLocaleLowerCase("es");
   const filteredEmployees = employees.filter((employee) =>
-    !normalizedEmployeeSearch || `${employee.name} ${employee.position}`.toLocaleLowerCase("es").includes(normalizedEmployeeSearch),
+    !normalizedEmployeeSearch || employee.name.toLocaleLowerCase("es").includes(normalizedEmployeeSearch),
   );
+  const selectedEmployee = employees.find((employee) => employee.id === employeeId);
 
   return (
     <Modal description="Creá las credenciales y asocialas a un empleado registrado en planilla." onClose={onClose} title="Registrar usuario" wide>
       <form className="space-y-6 p-6" onSubmit={handleSubmit}>
         <section>
           <h3 className="text-sm font-bold text-primary">Empleado y credenciales</h3>
-          <p className="mt-1 text-xs leading-5 text-muted">Solo aparecen empleados existentes que todavía no tienen un usuario.</p>
+          <p className="mt-1 text-xs leading-5 text-muted">Buscá y seleccioná un empleado existente que todavía no tenga un usuario.</p>
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            <div className="relative sm:col-span-2" onBlur={(event) => {
+              if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setEmployeeListOpen(false);
+            }}>
+              <label className="block text-sm font-semibold text-primary" htmlFor="employee-search">Buscar y seleccionar empleado</label>
+              <input
+                aria-autocomplete="list"
+                aria-controls="employee-options"
+                aria-expanded={employeeListOpen}
+                autoComplete="off"
+                autoFocus
+                className={inputClassName}
+                id="employee-search"
+                onChange={(event) => {
+                  setEmployeeSearch(event.target.value);
+                  setEmployeeId("");
+                  setEmployeeListOpen(true);
+                }}
+                onFocus={() => setEmployeeListOpen(true)}
+                placeholder="Escribí el nombre del empleado"
+                role="combobox"
+                type="text"
+                value={employeeSearch}
+              />
+              {employeeListOpen && (
+                <div className="absolute z-20 mt-2 max-h-56 w-full overflow-y-auto rounded-xl border border-primary/15 bg-white p-1.5 shadow-xl" id="employee-options" role="listbox">
+                  {filteredEmployees.map((employee) => (
+                    <button
+                      aria-selected={employee.id === employeeId}
+                      className={`w-full rounded-lg px-3 py-2.5 text-left text-sm transition hover:bg-page focus:bg-page focus:outline-none ${employee.id === employeeId ? "bg-primary/8 font-bold text-primary" : "text-ink/70"}`}
+                      key={employee.id}
+                      onClick={() => {
+                        setEmployeeId(employee.id);
+                        setEmployeeSearch(employee.name);
+                        setEmployeeListOpen(false);
+                      }}
+                      onMouseDown={(event) => event.preventDefault()}
+                      role="option"
+                      type="button"
+                    >
+                      {employee.name}
+                    </button>
+                  ))}
+                  {filteredEmployees.length === 0 && <p className="px-3 py-4 text-center text-sm text-muted">No hay empleados que coincidan con la búsqueda.</p>}
+                </div>
+              )}
+              {selectedEmployee && <p className="mt-2 text-xs font-semibold text-emerald-700">Empleado seleccionado: {selectedEmployee.name}</p>}
+            </div>
             <label className="block text-sm font-semibold text-primary sm:col-span-2">
-              Buscar empleado
-              <input autoFocus className={inputClassName} onChange={(event) => {
-                const value = event.target.value;
-                const query = value.trim().toLocaleLowerCase("es");
-                const firstMatch = employees.find((employee) => !query || `${employee.name} ${employee.position}`.toLocaleLowerCase("es").includes(query));
-                setEmployeeSearch(value);
-                setEmployeeId(firstMatch?.id ?? "");
-              }} placeholder="Escribí el nombre o cargo del empleado" type="search" value={employeeSearch} />
-            </label>
-            <label className="block text-sm font-semibold text-primary sm:col-span-2">
-              Empleado
-              <select className={inputClassName} disabled={filteredEmployees.length === 0} onChange={(event) => setEmployeeId(event.target.value)} required value={employeeId}>
-                {filteredEmployees.map((employee) => <option key={employee.id} value={employee.id}>{employee.name} · {employee.position}</option>)}
-              </select>
-              <span className="mt-2 block text-xs font-normal text-muted">
-                {filteredEmployees.length > 0 ? `${filteredEmployees.length} de ${employees.length} empleados disponibles.` : "No hay empleados que coincidan con la búsqueda."}
-              </span>
+              Cargo del empleado
+              <input className={`${inputClassName} cursor-default bg-page text-muted`} placeholder="Se completará al seleccionar un empleado" readOnly tabIndex={-1} type="text" value={selectedEmployee?.position ?? ""} />
+              <span className="mt-2 block text-xs font-normal text-muted">Campo informativo; no forma parte de los datos enviados.</span>
             </label>
             <label className="block text-sm font-semibold text-primary">
               Nombre de usuario
