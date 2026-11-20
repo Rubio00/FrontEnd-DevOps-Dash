@@ -20,6 +20,7 @@ export default function UserFormModal({
 }) {
   const availableRoles = roles.filter((role) => role.active);
   const [employeeId, setEmployeeId] = useState(employees[0]?.id ?? "");
+  const [employeeSearch, setEmployeeSearch] = useState("");
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [selectedRoleIds, setSelectedRoleIds] = useState<string[]>([]);
@@ -69,6 +70,11 @@ export default function UserFormModal({
     });
   }
 
+  const normalizedEmployeeSearch = employeeSearch.trim().toLocaleLowerCase("es");
+  const filteredEmployees = employees.filter((employee) =>
+    !normalizedEmployeeSearch || `${employee.name} ${employee.position}`.toLocaleLowerCase("es").includes(normalizedEmployeeSearch),
+  );
+
   return (
     <Modal description="Creá las credenciales y asocialas a un empleado registrado en planilla." onClose={onClose} title="Registrar usuario" wide>
       <form className="space-y-6 p-6" onSubmit={handleSubmit}>
@@ -77,10 +83,23 @@ export default function UserFormModal({
           <p className="mt-1 text-xs leading-5 text-muted">Solo aparecen empleados existentes que todavía no tienen un usuario.</p>
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
             <label className="block text-sm font-semibold text-primary sm:col-span-2">
+              Buscar empleado
+              <input autoFocus className={inputClassName} onChange={(event) => {
+                const value = event.target.value;
+                const query = value.trim().toLocaleLowerCase("es");
+                const firstMatch = employees.find((employee) => !query || `${employee.name} ${employee.position}`.toLocaleLowerCase("es").includes(query));
+                setEmployeeSearch(value);
+                setEmployeeId(firstMatch?.id ?? "");
+              }} placeholder="Escribí el nombre o cargo del empleado" type="search" value={employeeSearch} />
+            </label>
+            <label className="block text-sm font-semibold text-primary sm:col-span-2">
               Empleado
-              <select autoFocus className={inputClassName} onChange={(event) => setEmployeeId(event.target.value)} required value={employeeId}>
-                {employees.map((employee) => <option key={employee.id} value={employee.id}>{employee.name} · {employee.position}</option>)}
+              <select className={inputClassName} disabled={filteredEmployees.length === 0} onChange={(event) => setEmployeeId(event.target.value)} required value={employeeId}>
+                {filteredEmployees.map((employee) => <option key={employee.id} value={employee.id}>{employee.name} · {employee.position}</option>)}
               </select>
+              <span className="mt-2 block text-xs font-normal text-muted">
+                {filteredEmployees.length > 0 ? `${filteredEmployees.length} de ${employees.length} empleados disponibles.` : "No hay empleados que coincidan con la búsqueda."}
+              </span>
             </label>
             <label className="block text-sm font-semibold text-primary">
               Nombre de usuario
