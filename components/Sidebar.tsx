@@ -14,7 +14,7 @@ const items: Item[] = [
   { href: "/compras", label: "Compras", icon: "wallet" },
   { href: "/proveedores", label: "Proveedores", icon: "truck" },
   { href: "/planilla", label: "Planilla", icon: "payroll" },
-  // { href: "/sucursales", label: "Sucursales", icon: "branch" }, // descomentar cuando se una la rama de sucursales
+  { href: "/sucursales", label: "Sucursales", icon: "branch" }, // descomentar cuando se una la rama de sucursales
   { href: "/admin", label: "Administración", icon: "users" },
 ];
 

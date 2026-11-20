@@ -1,0 +1,40 @@
+import type { Sucursal } from "@/types/sucursal";
+
+export const sucursalesDetalle: Sucursal[] = [
+  {
+    id: "SUC-001",
+    nombre: "Centro Histórico",
+    codigo: "CEN",
+    direccion: "3.ª Calle Poniente #12",
+    ciudad: "San Salvador",
+    telefono: "2222-1001",
+    encargado: "Ana Martínez",
+    estado: "activa",
+    fcf: { inicial: 1, siguiente: 1284 },
+    ccf: { inicial: 1, siguiente: 312 },
+  },
+  {
+    id: "SUC-002",
+    nombre: "Escalón",
+    codigo: "ESC",
+    direccion: "Paseo General Escalón #4512",
+    ciudad: "San Salvador",
+    telefono: "2263-2002",
+    encargado: "Carlos Rivera",
+    estado: "activa",
+    fcf: { inicial: 1, siguiente: 903 },
+    ccf: { inicial: 1, siguiente: 175 },
+  },
+  {
+    id: "SUC-003",
+    nombre: "Santa Tecla",
+    codigo: "STE",
+    direccion: "Av. Las Palmeras #8",
+    ciudad: "Santa Tecla",
+    telefono: "2288-3003",
+    encargado: "María López",
+    estado: "inactiva",
+    fcf: { inicial: 1, siguiente: 240 },
+    ccf: { inicial: 1, siguiente: 41 },
+  },
+];
